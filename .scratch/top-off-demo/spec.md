@@ -73,7 +73,7 @@ The top-off panel compares Bahía Blanca (priority 1), Quequén (priority 2) and
   4. The "datos de demo" badge is visible on load.
   5. The AIS indicator is never green: check before linking an IMO and after linking `9436000`.
   6. Issue the order with each port selected: the confirmation names that port (Bahía Blanca and Quequén), never a fixed one.
-  7. The "no desviar" row appears and can be selected; with it selected the order button is disabled. Also check a date where every port is negative and "no desviar" is marked best.
+  7. The "no desviar" row appears and can be selected; with it selected the order button is disabled. Also check a date where every port is negative and "no desviar" is marked best (con el Panamax por defecto no existe, porque su pérdida nunca llega a cero; usar el Handymax IMO `9321483` el 2026-10-04).
   8. The "escenario crítico" label and the assumptions text under the table are visible.
   9. Golden path end to end, including the CSV download.
 

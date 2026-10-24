@@ -14,7 +14,7 @@ Spec: `.scratch/top-off-demo/spec.md`
 - [x] The "datos de demo" badge is visible on load.
 - [x] The AIS indicator is never green, before and after linking `9436000`.
 - [x] The order confirmation names the selected port for both Bahía Blanca and Quequén, never a fixed one.
-- [x] The "no desviar" row appears and can be selected; with it selected the order button is disabled. A date where every port is negative marks "no desviar" as best.
+- [x] The "no desviar" row appears and can be selected; with it selected the order button is disabled. A date where every port is negative marks "no desviar" as best (con el Panamax por defecto no existe, porque su pérdida nunca llega a cero; usar el Handymax IMO `9321483` el 2026-10-04).
 - [x] The "escenario crítico" label and the assumptions text under the table are visible.
 - [ ] The golden path works end to end, including the CSV download.
 - [x] The observed result of each check is recorded in this file, and any failure is reported rather than hidden.
@@ -38,5 +38,5 @@ Comandos y navegador: Edge headless controlado con puppeteer-core contra `http:/
 Pendientes y observaciones que no son parte de estos tickets:
 
 - La descarga del CSV hay que probarla a mano en un navegador con ventana (punto 11).
-- El KPI "Lucro Cesante (72hs)" muestra `-$14,680,000 USD`, que suma tres días de pérdida del mismo buque, mientras que el top-off usa el peor día (USD 5.320.000 de beneficio bruto). No se corrigió porque queda fuera de los tickets.
-- Con pérdida cero el KPI muestra `-$0 USD`.
+- Corregido después del ensayo: el KPI "Lucro Cesante (72hs)" mostraba `-$14,680,000 USD` porque sumaba tres días de pérdida del mismo buque. La API ahora devuelve el del peor día de la ventana, como el top-off: `-$5,320,000 USD` con el Panamax por defecto (commit `f256cdf`).
+- Corregido después del ensayo: con pérdida cero el KPI mostraba `-$0 USD` y ahora muestra `$0 USD` (commit `a447553`).
