@@ -70,27 +70,27 @@ const CARD = 'rounded-xl border border-slate-200 bg-white shadow-sm'
 function KpiCard({ icon: Icon, label, value, sub, tone = 'text-blue-600' }) {
   return (
     <div className={`${CARD} p-5`}>
-      <div className="flex items-center justify-between text-slate-500">
+      <div className="flex items-center justify-between text-slate-600">
         <span className="text-xs font-medium uppercase tracking-wider">{label}</span>
         <Icon className={`h-5 w-5 ${tone}`} />
       </div>
       <div className={`mt-3 text-3xl font-bold ${tone}`}>{value}</div>
-      <div className="mt-1 text-sm text-slate-500">{sub}</div>
+      <div className="mt-1 text-sm text-slate-600">{sub}</div>
     </div>
   )
 }
 
 // Refleja el estado real de cada fuente: en vivo, fallback (valor por defecto) o dato de demo.
 function Fuente({ nombre, estado }) {
-  const info = {
-    en_vivo: ['🟢', 'Datos en vivo'],
-    simulado: ['🟡', 'Sin respuesta de la fuente: usando valor por defecto'],
-    demo: ['🟡', 'Datos simulados (demo)'],
+  const [punto, texto] = {
+    en_vivo: ['bg-emerald-600', 'en vivo'],
+    simulado: ['bg-amber-500', 'valor por defecto'],
+    demo: ['bg-amber-500', 'demo'],
   }[estado]
   return (
-    <span title={info[1]} className="inline-flex items-center gap-1.5">
-      <span>{info[0]}</span>
-      {nombre}
+    <span className="inline-flex items-center gap-1.5">
+      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${punto}`} />
+      {nombre}: {texto}
     </span>
   )
 }
@@ -103,7 +103,7 @@ function ChartTooltip({ active, payload, label }) {
       <div className="mb-1 font-semibold">{fmtFecha(label)}</div>
       <div>Altura: {p.altura_rio_m.toFixed(2)} m</div>
       <div>Calado seguro: {p.calado_maximo_seguro_pies} ft</div>
-      <div className="text-slate-500">{p.tipo === 'prediccion' ? 'Proyección' : 'Histórico'}</div>
+      <div className="text-slate-600">{p.tipo === 'prediccion' ? 'Proyección' : 'Histórico'}</div>
     </div>
   )
 }
@@ -236,7 +236,7 @@ export default function App() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-800">
         <div className="max-w-md rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
-          <h1 className="text-lg font-semibold text-red-600">No se pudo conectar con la API</h1>
+          <h1 className="text-lg font-semibold text-red-700">No se pudo conectar con la API</h1>
           <p className="mt-2 text-sm text-slate-600">
             Verificá que el backend esté corriendo en <code>{API_BASE}</code> ({error}).
           </p>
@@ -247,7 +247,7 @@ export default function App() {
 
   if (!data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
         Cargando pronóstico…
       </div>
     )
@@ -282,7 +282,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
+      <main className="mx-auto max-w-7xl space-y-6 p-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-blue-600 p-2">
@@ -290,7 +290,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">Calado Predictivo · Command Center</h1>
-              <p className="text-sm text-slate-500">{data.ubicacion} - agroexportación</p>
+              <p className="text-sm text-slate-600">{data.ubicacion} - agroexportación</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -300,9 +300,9 @@ export default function App() {
             </span>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
               <Fuente nombre="INA (Río)" estado={data.fuentes.ina} />
-              <span className="text-slate-300">|</span>
+              <span aria-hidden="true" className="text-slate-300">|</span>
               <Fuente nombre="BCR (Soja)" estado={data.fuentes.bcr} />
-              <span className="text-slate-300">|</span>
+              <span aria-hidden="true" className="text-slate-300">|</span>
               <Fuente nombre="AIS (Buque)" estado="demo" />
             </div>
           </div>
@@ -311,7 +311,7 @@ export default function App() {
         {/* Barra de controles */}
         <section className={`${CARD} flex flex-wrap items-end gap-x-6 gap-y-4 p-4`}>
           <label className="flex flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-600">
               <CalendarDays className="h-4 w-4 text-blue-600" /> Fecha de análisis
             </span>
             <input
@@ -319,12 +319,12 @@ export default function App() {
               value={fecha}
               max={hoyISO()}
               onChange={(e) => cambiarFecha(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
             />
           </label>
 
           <form onSubmit={vincularAis} className="flex flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-600">
               <Radar className="h-4 w-4 text-blue-600" /> Buscador de buque (AIS)
             </span>
             <div className="flex gap-2">
@@ -333,13 +333,14 @@ export default function App() {
                 inputMode="numeric"
                 value={imoInput}
                 onChange={(e) => setImoInput(e.target.value)}
+                aria-label="IMO del buque"
                 placeholder="Ingresar IMO, ej. 9436000"
-                className="w-64 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                className="min-h-11 w-64 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
               />
               <button
                 type="submit"
                 disabled={vinculando || !imoInput.trim()}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                className="min-h-11 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600"
               >
                 {vinculando ? 'Buscando…' : 'Vincular AIS'}
               </button>
@@ -353,7 +354,7 @@ export default function App() {
                 <div className="font-semibold text-slate-800">
                   {buque.nombre} - {buque.tipo}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-slate-600">
                   IMO {buque.imo} · Eslora {buque.eslora_m} m · {fmtTn(buque.carga_optima_tn)} · Calado diseño{' '}
                   {buque.calado_diseno_pies} ft
                 </div>
@@ -361,16 +362,16 @@ export default function App() {
               <button
                 type="button"
                 onClick={desvincularAis}
-                title="Desvincular buque"
-                className="rounded p-1 text-slate-400 transition hover:bg-blue-100 hover:text-slate-600"
+                                aria-label="Desvincular buque"
+                className="flex h-11 w-11 items-center justify-center rounded text-slate-600 transition hover:bg-blue-100 hover:text-slate-700"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
           )}
-          {buqueError && <span className="text-sm font-medium text-red-600">{buqueError}</span>}
-          {error && <span className="text-sm font-medium text-red-600">Error al actualizar ({error})</span>}
-          {cargando && <span className="text-sm text-slate-400">Actualizando…</span>}
+          {buqueError && <span className="text-sm font-medium text-red-700">{buqueError}</span>}
+          {error && <span className="text-sm font-medium text-red-700">Error al actualizar ({error})</span>}
+          {cargando && <span className="text-sm text-slate-500">Actualizando…</span>}
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -385,14 +386,14 @@ export default function App() {
             label="Tendencia a 72hs"
             value={`${resumen.tendencia_72hs_m > 0 ? '+' : ''}${resumen.tendencia_72hs_m.toFixed(2)} m`}
             sub={baja ? 'Bajante en curso' : 'Río en crecida'}
-            tone={baja ? 'text-red-600' : 'text-emerald-600'}
+            tone={baja ? 'text-red-700' : 'text-emerald-700'}
           />
           <KpiCard
             icon={TrendingDown}
             label="Pérdida de Capacidad Estimada"
             value={fmtTn(Math.max(0, resumen.perdida_capacidad_tn))}
             sub={`${data.buque.nombre}: carga óptima de ${fmtTn(data.carga_base_tn)}`}
-            tone="text-red-600"
+            tone="text-red-700"
           />
           {ordenEmitida ? (
             <KpiCard
@@ -404,7 +405,7 @@ export default function App() {
                   ? 'Sin desvío: no hay costo ni ahorro de top-off'
                   : `Neto tras el costo del top-off en ${opcionElegida.nombre}`
               }
-              tone="text-emerald-600"
+              tone="text-emerald-700"
             />
           ) : (
             <KpiCard
@@ -412,7 +413,7 @@ export default function App() {
               label="Lucro Cesante (72hs)"
               value={fmtUsdPerdida(resumen.lucro_cesante_72hs_usd)}
               sub={`Soja no cargada a USD ${data.precio_soja_usd_tn}/tn`}
-              tone="text-red-600"
+              tone="text-red-700"
             />
           )}
         </section>
@@ -421,9 +422,9 @@ export default function App() {
           {/* Columna izquierda (70%): gráfico + tabla */}
           <div className="flex min-w-0 flex-col gap-6 lg:col-span-7">
             <section className={`${CARD} p-5`}>
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
                 <Anchor className="h-4 w-4 text-blue-600" /> Línea de flotación: histórico vs. proyección
-                <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold normal-case tracking-normal text-red-600">
+                <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold normal-case tracking-normal text-red-700">
                   Escenario crítico
                 </span>
               </h2>
@@ -476,7 +477,7 @@ export default function App() {
 
             <section className={`${CARD} p-5`}>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
+                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
                   <Ruler className="h-4 w-4 text-blue-600" />
                   {data.es_pasado
                     ? 'Recomendación de carga · 3 días siguientes'
@@ -484,7 +485,7 @@ export default function App() {
                 </h2>
                 <button
                   onClick={exportarReporte}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
                 >
                   <Download className="h-4 w-4" />
                   {exportado ? 'Reporte generado ✓' : 'Exportar reporte a agencia marítima'}
@@ -492,13 +493,13 @@ export default function App() {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="text-xs uppercase tracking-wider text-slate-500">
+                  <thead className="text-xs uppercase tracking-wider text-slate-600">
                     <tr className="border-b border-slate-200">
-                      <th className="py-2 pr-4">Fecha</th>
-                      <th className="py-2 pr-4">Altura del río</th>
-                      <th className="py-2 pr-4">Calado máx. seguro</th>
-                      <th className="py-2 pr-4">Tonelaje recomendado</th>
-                      <th className="py-2">Impacto económico</th>
+                      <th scope="col" className="py-2 pr-4">Fecha</th>
+                      <th scope="col" className="py-2 pr-4">Altura del río</th>
+                      <th scope="col" className="py-2 pr-4">Calado máx. seguro</th>
+                      <th scope="col" className="py-2 pr-4">Tonelaje recomendado</th>
+                      <th scope="col" className="py-2">Impacto económico</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -508,7 +509,7 @@ export default function App() {
                         <td className="py-3 pr-4">{p.altura_rio_m.toFixed(2)} m</td>
                         <td className="py-3 pr-4">{p.calado_maximo_seguro_pies} ft</td>
                         <td className="py-3 pr-4 font-semibold">{fmtTn(p.tonelaje_recomendado_tn)}</td>
-                        <td className="py-3 font-semibold text-red-600">{fmtUsdPerdida(p.impacto_usd)}</td>
+                        <td className="py-3 font-semibold text-red-700">{fmtUsdPerdida(p.impacto_usd)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -519,7 +520,7 @@ export default function App() {
 
           {/* Columna derecha (30%): Centro de Decisiones */}
           <aside className="flex min-w-0 flex-col gap-4 lg:col-span-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
               <Target className="h-4 w-4 text-blue-600" /> Centro de Decisiones
             </h2>
 
@@ -546,12 +547,12 @@ export default function App() {
               <p className="mt-2 text-lg font-bold text-slate-800">
                 💡 Adelantar zarpe al {fmtDiaCorto(mejorDia.fecha)}
               </p>
-              <p className="mt-1 text-sm font-semibold text-emerald-600">
+              <p className="mt-1 text-sm font-semibold text-emerald-700">
                 + {fmtUsd(ahorroArbitraje)} USD de ahorro frente al {fmtDiaSemana(peorDia.fecha)}
               </p>
             </div>
 
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
+            <div className={`${CARD} p-5`}>
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-700">
                 <Route className="h-4 w-4" /> Simulador Top-off
               </div>
@@ -560,11 +561,11 @@ export default function App() {
                 {fmtTn(tnTopOff)} en el puerto elegido.
               </p>
               <table className="mt-3 w-full text-left text-sm">
-                <thead className="text-xs uppercase tracking-wider text-slate-500">
+                <thead className="text-xs uppercase tracking-wider text-slate-600">
                   <tr className="border-b border-blue-200">
-                    <th className="py-1.5 pr-2">Opción</th>
-                    <th className="py-1.5 pr-2 text-right">Costo</th>
-                    <th className="py-1.5 text-right">Ahorro neto</th>
+                    <th scope="col" className="py-1.5 pr-2">Opción</th>
+                    <th scope="col" className="py-1.5 pr-2 text-right">Costo</th>
+                    <th scope="col" className="py-1.5 text-right">Ahorro neto</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -575,13 +576,14 @@ export default function App() {
                       <tr
                         key={o.id}
                         onClick={() => !ordenEmitida && setSeleccionId(o.id)}
-                        className={`border-b border-blue-100 ${ordenEmitida ? '' : 'cursor-pointer'} ${esElegida ? 'bg-blue-100' : ''}`}
+                        className={`border-b border-blue-100 ${ordenEmitida ? '' : 'cursor-pointer'} ${esElegida ? 'bg-blue-50' : ''}`}
                       >
-                        <td className="py-2 pr-2 align-top">
-                          <label className="flex items-center gap-2 font-semibold text-slate-800">
+                        <td className="py-1 pl-2 pr-2 align-top">
+                          <label className="flex min-h-11 items-center gap-2 font-semibold text-slate-800">
                             <input
                               type="radio"
                               name="top-off"
+                              className="h-4 w-4 accent-blue-600"
                               checked={esElegida}
                               disabled={ordenEmitida}
                               onChange={() => setSeleccionId(o.id)}
@@ -592,16 +594,16 @@ export default function App() {
                             <span className="text-xs font-semibold text-emerald-700">Mejor opción</span>
                           )}
                           {o.costo > 0 && (
-                            <div className="text-xs text-slate-500">
+                            <div className="text-xs text-slate-600">
                               Días extra {fmtUsd(o.costoDias)} · Premio del grano {fmtUsd(o.costoPremio)}
                             </div>
                           )}
                         </td>
-                        <td className="py-2 pr-2 text-right align-top font-semibold text-red-600">
+                        <td className="py-2 pr-2 text-right align-top font-semibold text-red-700">
                           {o.costo > 0 ? `-${fmtUsd(o.costo)}` : fmtUsd(0)}
                         </td>
                         <td
-                          className={`py-2 text-right align-top font-bold ${o.ahorroNeto < 0 ? 'text-red-600' : 'text-emerald-600'}`}
+                          className={`py-2 text-right align-top font-bold ${o.ahorroNeto < 0 ? 'text-red-700' : 'text-emerald-700'}`}
                         >
                           {fmtUsdConSigno(o.ahorroNeto)}
                         </td>
@@ -610,7 +612,7 @@ export default function App() {
                   })}
                 </tbody>
               </table>
-              <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-slate-500">
+              <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-slate-600">
                 <li>Costo = días extra de buque (USD {COSTO_DIARIO_BUQUE_USD.toLocaleString('en-US')} por día, demo) + premio del grano por tonelada completada.</li>
                 {PUERTOS_TOP_OFF.map((p) => (
                   <li key={p.id}>
@@ -629,7 +631,7 @@ export default function App() {
               <button
                 onClick={emitirDesvio}
                 disabled={ordenEmitida}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+                className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600 disabled:shadow-none"
               >
                 {ordenEmitida ? (
                   <>
@@ -649,7 +651,7 @@ export default function App() {
             </div>
           </aside>
         </div>
-      </div>
+      </main>
     </div>
   )
 }
