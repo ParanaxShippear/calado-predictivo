@@ -14,7 +14,7 @@ Spec: `.scratch/top-off-demo/spec.md`
 - [x] The "datos de demo" badge is visible on load.
 - [x] The AIS indicator is never green, before and after linking `9436000`.
 - [x] The order confirmation names the selected port for both Bahía Blanca and Quequén, never a fixed one.
-- [x] The "no desviar" row appears and can be selected; with it selected the order button is disabled. A date where every port is negative marks "no desviar" as best (con el Panamax por defecto no existe, porque su pérdida nunca llega a cero; usar el Handymax IMO `9321483` el 2026-10-04).
+- [x] The "no desviar" row appears and can be selected; with it selected the button reads "Registrar decisión: no desviar" and pressing it shows the decision as recorded. A date where every port is negative marks "no desviar" as best (con el Panamax por defecto no existe, porque su pérdida nunca llega a cero; usar el Handymax IMO `9321483` el 2026-10-04).
 - [x] The "escenario crítico" label and the assumptions text under the table are visible.
 - [ ] The golden path works end to end, including the CSV download.
 - [x] The observed result of each check is recorded in this file, and any failure is reported rather than hidden.
@@ -29,10 +29,10 @@ Comandos y navegador: Edge headless controlado con puppeteer-core contra `http:/
 4. Badge "datos de demo": visible al cargar.
 5. AIS: `🟡 AIS (Buque)` antes de vincular y `🟡 AIS (Buque)` después de vincular `9436000`. No hay `🟢` en la pantalla en ninguno de los dos casos.
 6. Orden con Bahía Blanca elegido: "Orden #482 emitida: el buque se desvía al sur para completar la carga en Bahía Blanca." Con Quequén elegido: "...en Quequén." El KPI "Ahorro Logístico Asegurado" nombra el puerto elegido.
-7. Con "No desviar" elegido, el botón "Emitir Orden de Desvío" queda deshabilitado. Al cambiar la fecha, la selección vuelve a la mejor opción y la orden emitida desaparece.
+7. Con "No desviar" elegido, el botón dice "Registrar decisión: no desviar" y al apretarlo muestra "Decisión registrada: no desviar" y queda como "Decisión registrada". (Después del ensayo se reemplazó el botón deshabilitado por este registro en pantalla.) Al cambiar la fecha, la selección vuelve a la mejor opción y la orden emitida desaparece.
 8. Escenario crítico: la etiqueta está en la sección del gráfico. Los supuestos bajo la tabla (2.200 tn por pie, Panamax de referencia de 45.000 tn, calado de diseño de 34 ft como supuesto, costos por puerto con su rótulo, mecánica de carga parcial y navegación al sur) son visibles.
 9. Mejor opción con el escenario actual (Panamax por defecto): Bahía Blanca (USD 652.200 de costo y +USD 4.667.800 de ahorro neto), seguida de Quequén (USD 665.400 y +USD 4.654.600).
-10. Fecha con todos los puertos negativos: con el Panamax por defecto no existe, porque en el pasado la altura simulada nunca supera unos 4,3 m y siempre hay pérdida. Se observó con el Handymax `9321483` el 2026-10-04: toneladas a completar 0, Bahía Blanca -USD 200.000, Quequén -USD 160.000, y "No desviar" queda marcado como elegido (mejor opción) con el botón de orden deshabilitado.
+10. Fecha con todos los puertos negativos: con el Panamax por defecto no existe, porque en el pasado la altura simulada nunca supera unos 4,3 m y siempre hay pérdida. Se observó con el Handymax `9321483` el 2026-10-04: toneladas a completar 0, Bahía Blanca -USD 200.000, Quequén -USD 160.000, y "No desviar" queda marcado como elegido (mejor opción) con el botón en "Registrar decisión: no desviar" (en el ensayo original estaba deshabilitado).
 11. CSV: el botón genera el archivo `reporte-calado-2026-10-24.csv` con las 3 filas de la ventana y el cambio de texto "Reporte generado ✓". El contenido se verificó interceptando el `Blob`. La descarga a disco no se pudo observar: Edge headless la canceló (`Browser.downloadProgress: canceled`) tanto con la API original como sin `revokeObjectURL`, así que queda por confirmar en un navegador con ventana.
 
 Pendientes y observaciones que no son parte de estos tickets:

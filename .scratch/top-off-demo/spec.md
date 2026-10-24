@@ -34,7 +34,7 @@ The top-off panel compares Bahía Blanca (priority 1), Quequén (priority 2) and
 14. As an agroexportadora planner, I want the text to say the vessel loads partially at Gran Rosario and sails south to complete its cargo, so that the mechanic is stated correctly.
 15. As an agroexportadora planner, I want no mention of "por tren" or "logística terrestre reservada" anywhere in the UI, so that I never claim something unsupported.
 16. As an agroexportadora planner, I want the order confirmation to name the selected port, so that the message matches my decision.
-17. As an agroexportadora planner, I want the order button disabled when "no desviar" is selected, so that I cannot issue a diversion order I did not choose.
+17. As an agroexportadora planner, I want "no desviar" to be recorded as a decision (button "Registrar decisión: no desviar", confirmation "Decisión registrada: no desviar", no cost and no saving), so that not diverting is also a visible decision. It is on-screen only: nothing persists.
 18. As an agroexportadora planner, I want the Ahorro Logístico Asegurado KPI to use the selected port's ahorro neto and name that port, so that the KPI and the order agree.
 19. As an agroexportadora planner, I want changing the date or the vessel to reset the order state and recompute the table, so that stale orders never show.
 20. As an agroexportadora planner, I want the Panamax as the default vessel, so that nobody has to link an IMO in the demo.
@@ -53,7 +53,7 @@ The top-off panel compares Bahía Blanca (priority 1), Quequén (priority 2) and
 - The existing hardcoded `COSTO_DESVIO_USD` (450,000) is replaced by the per-port model.
 - Selection state: the best option is preselected on every recompute; the user may select another row. The order, the confirmation text and the KPI all read the selected row.
 - Order confirmation names the selected port and states the mechanic: the vessel is diverted south to complete cargo. The order number stays a `DEMO` constant. "Por tren" and "Logística terrestre reservada" are removed from every UI string, including the simulator title ("Completar X tn por tren") and the KPI/order texts.
-- Selecting "no desviar" disables the order button.
+- Selecting "no desviar" turns the button into "Registrar decisión: no desviar". Pressing it shows "Decisión registrada: no desviar" and the KPI sub-text reads "Sin desvío: no hay costo ni ahorro de top-off". No order number and no persistence (an endpoint is OUT of scope).
 - "datos de demo" badge: one visible badge in the header, shown while any source is simulated (today always, since the previous days, the projection, AIS and the port costs are demo).
 - AIS indicator: never green. It shows a simulated state both with and without a linked vessel. The IMO search stays as it exists today but the demo never uses it. No new AIS features.
 - INA and BCR indicators: unchanged, the API state is shown as is. The failure fallback keeps the `simulado` yellow state.
@@ -73,7 +73,7 @@ The top-off panel compares Bahía Blanca (priority 1), Quequén (priority 2) and
   4. The "datos de demo" badge is visible on load.
   5. The AIS indicator is never green: check before linking an IMO and after linking `9436000`.
   6. Issue the order with each port selected: the confirmation names that port (Bahía Blanca and Quequén), never a fixed one.
-  7. The "no desviar" row appears and can be selected; with it selected the order button is disabled. Also check a date where every port is negative and "no desviar" is marked best (con el Panamax por defecto no existe, porque su pérdida nunca llega a cero; usar el Handymax IMO `9321483` el 2026-10-04).
+  7. The "no desviar" row appears and can be selected; with it selected the button reads "Registrar decisión: no desviar" and pressing it shows the decision as recorded. Also check a date where every port is negative and "no desviar" is marked best (con el Panamax por defecto no existe, porque su pérdida nunca llega a cero; usar el Handymax IMO `9321483` el 2026-10-04).
   8. The "escenario crítico" label and the assumptions text under the table are visible.
   9. Golden path end to end, including the CSV download.
 
