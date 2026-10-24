@@ -24,7 +24,7 @@ Demo data is allowed. Unlabeled demo data is not.
 - AIS is always simulated (hardcoded `BUQUES`): never show it as live.
 - Demo values today (inline, keep them as named constants marked `DEMO`): previous days and projection (`altura_para`, `DELTAS_PROYECCION_M`), `BUQUES`, top-off port costs (extra vessel days + grain premium at the completion port), the order number.
 - Real sources attempted: river height (INA) and soy price (BCR) via scraping. Selectors are placeholders; on failure use the fallback and the `simulado` state (yellow indicator).
-- Model assumptions: 2,200 tn per foot of draft, 45,000 tn base load. Changing one means updating it here (single source).
+- Model assumptions: 2,200 tn per foot of draft, 45,000 tn base load, 6.0 m channel depth offset (`OFFSET_CANAL_M`), 0.6 m under-keel clearance (`UKC_M`). Safe draft = (river height + 6.0 - 0.6) m converted to feet. Changing one means updating it here (single source).
 
 ## Top-off mechanic
 The vessel loads partially at Gran Rosario and sails south to complete its cargo at the port. Never state or imply that the cargo travels by train from Rosario: no source supports it.
