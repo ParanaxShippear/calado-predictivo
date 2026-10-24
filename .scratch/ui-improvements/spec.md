@@ -46,3 +46,10 @@ Dark mode and a token system, new features, any change to the API, the model or 
 - The caption about the cropped vertical scale under the chart is removed.
 - The sentence "El buque carga parcialmente en el Gran Rosario y navega al sur para completar X tn en el puerto elegido" is removed from the top-off panel (it was the on-screen statement of the mechanic, story 14 of the top-off spec). The mechanic stays documented in `AGENTS.md` and the README, and the rule of never implying a train still applies.
 - Approved by the owner: emitting a top-off order shows an on-screen document "Orden de desvío" addressed to the agencia marítima: order number, issue date, vessel and IMO, the instruction (leave Gran Rosario with the partial load, complete the rest at the selected port), the reason (calado seguro previsto), the estimated cost split and ahorro neto, and the status "enviada a la agencia marítima", with the footer "Documento generado por Paranax con datos simulados". It is not shown for "no desviar". Nothing is sent or stored.
+- Approved by the owner (2026-10-24), dashboard rework:
+  - The "Arbitraje Logístico" block and the "Recomendación de carga" table (3 days) are removed. The 3-day forecast lives in the order as an annex.
+  - The order document is always visible as a draft ("Borrador") that follows the selected option, sits in a sticky right column and is issued from its own footer ("Emitir Orden de Desvío"; "Registrar decisión: no desviar" for the no-desviar option). After issuing it reads "Enviada a la agencia marítima" (or "Decisión registrada").
+  - The economics read as an operation: "+ Lucro cesante evitado", "− Días extra de buque", "− Premio del grano", "= Ahorro neto estimado", with the total top-off cost beside the heading.
+  - Weekdays are always written in full ("Martes 27/10", "el martes 27/10"), including the chart axis.
+  - Layout: chart and simulator on the left, order on the right; on narrow screens simulator, order, then chart.
+  - The CSV is downloaded from the annex of the order ("Descargar (CSV)"), and now carries the vessel name and IMO columns.

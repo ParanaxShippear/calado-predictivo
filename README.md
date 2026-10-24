@@ -14,11 +14,10 @@ Cuando el Paraná baja, el calado máximo seguro de los buques se reduce y no pu
 - Altura del río en Rosario: 4 días de histórico y 3 de proyección.
 - Calado máximo seguro (en pies) y tonelaje recomendado para cada día.
 - Pérdida de capacidad y lucro cesante a 72 hs. Como un buque se carga una sola vez, el lucro cesante es el del peor día de la ventana, no la suma de los tres.
-- Arbitraje de fechas: mejor y peor día de la ventana, y cuánto se ahorra adelantando el zarpe.
 - Comparación de puertos de top-off contra la opción de no desviar.
-- Orden de desvío: al emitirla se muestra el documento que recibiría la agencia marítima.
+- Orden de desvío: documento dirigido a la agencia marítima, siempre visible como borrador y actualizado con la opción elegida. Se emite desde el propio documento. Muestra la cuenta (lucro cesante evitado, menos días extra de buque, menos premio del grano, igual ahorro neto) y el anexo del pronóstico.
 - Calendario de análisis: una fecha pasada muestra el escenario histórico y hoy muestra la proyección.
-- Exportación de un reporte en CSV.
+- Anexo con el pronóstico de calado de los 3 días siguientes, dentro de la orden y descargable en CSV (incluye buque e IMO).
 
 ## Top-off
 
@@ -69,7 +68,7 @@ Incluido en la demo:
 
 Fuera de alcance: scraping real, modelos de ML o LLM, AIS en vivo, vista para la agencia marítima y tests.
 
-El flujo principal es: ingresar el IMO, hoy, gráfico, lucro cesante, comparación de puertos, exportar CSV. La interfaz no muestra datos ni cifras hasta que se ingresa un IMO; la demo usa `9436000` (Panamax).
+El flujo principal es: ingresar el IMO, hoy, gráfico, lucro cesante, comparación de puertos, orden de desvío, descargar el anexo en CSV. La interfaz no muestra datos ni cifras hasta que se ingresa un IMO; la demo usa `9436000` (Panamax).
 
 Las reglas de trabajo y el detalle del alcance están en [AGENTS.md](AGENTS.md), que es la fuente de verdad ante cualquier diferencia con este documento.
 
@@ -146,4 +145,4 @@ La primera consulta de cada 5 minutos puede demorar unos segundos mientras vence
 
 El alcance descripto arriba está implementado en el frontend. La especificación y los tickets están en `.scratch/top-off-demo/`, y el ensayo del flujo completo, con los resultados observados, en `.scratch/top-off-demo/issues/04-ensayo-del-demo.md`.
 
-Pendiente: confirmar a mano, en un navegador con ventana, que la exportación del CSV descarga el archivo. El contenido se verificó, pero la descarga a disco no se pudo observar en el ensayo automatizado.
+Pendiente: confirmar a mano, en un navegador con ventana, que la descarga del CSV guarda el archivo. El contenido se verificó, pero la descarga a disco no se pudo observar en el ensayo automatizado.

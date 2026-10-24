@@ -1,6 +1,6 @@
 # Paranax (repo: calado-predictivo)
 
-Agro-fintech command center. Projects the Paraná river height at Rosario, derives the safe draft of a Panamax vessel, and quantifies lost tonnage and lucro cesante in USD. Recommends date arbitrage and a top-off port (Bahía Blanca or Quequén). Hackathon MVP (4 h build): the pitch is the product.
+Agro-fintech command center. Projects the Paraná river height at Rosario, derives the safe draft of a Panamax vessel, and quantifies lost tonnage and lucro cesante in USD. Recommends a top-off port (Bahía Blanca or Quequén) and shows the resulting order of diversion as a document. Hackathon MVP (4 h build): the pitch is the product.
 
 ## Layout
 - `api/main.py`: single-file FastAPI app (scraping, vessel DB, draft model, endpoints).
@@ -43,7 +43,7 @@ The vessel loads partially at Gran Rosario and sails south to complete its cargo
 ## Hackathon constraints
 - Scope is closed. IN: the existing dashboard, a "datos simulados" badge, an AIS indicator that never shows green, a top-off port comparison (Bahía Blanca, Quequén) with demo costs, a "no desviar" row, a "escenario crítico" label, rehearsal. UI improvements approved by the owner on 2026-10-24 (accessibility, es-AR number formats, decision hierarchy, an on-screen order document addressed to the agencia marítima; see `.scratch/ui-improvements/spec.md`). OUT: real scraping, ML/LLM, live AIS, agencia view, tests, README roadmap. If a request is not IN, say no.
 - Top-off implementation: frontend constants only (2 ports, demo costs, 2 cost components). No new endpoint, no API table, no extra cost components.
-- Primary persona: the agroexportadora. Golden path: enter IMO -> today -> chart -> lucro cesante -> top-off port comparison -> export CSV. Must work on every commit.
+- Primary persona: the agroexportadora. Golden path: enter IMO -> today -> chart -> lucro cesante -> top-off port comparison -> order of diversion -> download the CSV annex. Must work on every commit.
 - The UI shows no data or numbers until an IMO is linked (owner decision, 2026-10-24): the first screen asks for the IMO. The demo uses IMO `9436000` (Agro Pioneer, Panamax). The API still falls back to the Panamax when `imo` is omitted.
 - Never claim INA/BCR data or an AI model is live.
 - If a task exceeds 30 min without closing, stop and report options.

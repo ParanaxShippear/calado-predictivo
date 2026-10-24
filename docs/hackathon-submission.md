@@ -29,6 +29,7 @@ Un modelo proyecta la altura del río a 72 hs y recomienda fecha de zarpe y puer
 ## Decisions
 
 - **Product name: Paranax** (team name: ParanaLove). Set by the owner on 2026-10-24; the form answers above do not name the product.
+- **Date arbitrage is no longer in the product.** The owner removed the "Arbitraje Logístico" block on 2026-10-24. The form answer "recomienda fecha de zarpe y puerto de top-off" (AI question) no longer matches: the product recommends the top-off port and shows the order. Update the form or that sentence before submitting.
 - **Track: Finanzas.** The repo frames the product as an agro-fintech command center (lucro cesante in USD, top-off cost comparison).
 - **AI answer is deliberately honest.** `AGENTS.md` puts ML/LLM out of scope and forbids claiming an AI model is live. The projection is simulated and the model rules are deterministic; the form says so.
 - **Market size uses only sourced figures.** The number of exporting companies was not found in any source, so it is not claimed. Figures are cited with their source below.
