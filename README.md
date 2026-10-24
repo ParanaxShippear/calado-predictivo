@@ -29,7 +29,9 @@ Los puertos considerados, en orden de prioridad, son:
 
 Buenos Aires queda descartado: tiene 34 pies de calado y no opera granos.
 
-Cada puerto se compara con la opción de no desviar. El costo del top-off tiene dos componentes: los días extra de buque y el premium del grano en el puerto de completamiento. Ambos son valores de demostración.
+Cada puerto se compara con la opción de no desviar, que tiene costo y ahorro neto cero. Si todos los puertos dan ahorro neto negativo, "no desviar" es la opción recomendada.
+
+El costo del top-off tiene dos componentes: los días extra de buque (días por el costo diario del buque) y el premio del grano en el puerto de completamiento (USD por tonelada completada). Los valores iniciales están definidos en `.scratch/top-off-demo/spec.md`.
 
 ## Datos reales y datos de demo
 
@@ -39,16 +41,19 @@ Cada puerto se compara con la opción de no desviar. El costo del top-off tiene 
 | Precio de la soja (BCR) | Scraping con selector provisorio | Usa el valor por defecto de USD 400/tn. El indicador queda en amarillo (`simulado`). |
 | Días previos y proyección | Simulados alrededor de la altura de hoy | Demo |
 | Buques (AIS) | Base fija de 3 buques en `api/main.py` | Demo. Nunca se muestra como en vivo. |
-| Costos del top-off | Constantes en el frontend | Demo |
+| Costos del top-off | Constantes en el frontend | Demo. La excepción es el premio del grano en Bahía Blanca (USD 34/tn), que se rotula "referencia": está dentro del diferencial de precio del maíz que observó Sio Granos sobre Gran Rosario (unos USD 32 a 40/tn en 2021 y 2022). Los días extra y todos los valores de Quequén son demo. |
 | Número de orden de desvío | Constante en el frontend | Demo |
 
 La orden de desvío es solo visual: no se envía a ningún sistema.
 
 Supuestos del modelo:
 
-- 2.200 tn perdidas por pie de calado faltante en un Panamax.
-- 45.000 tn de carga base.
+- 2.200 tn perdidas por pie de calado faltante en un Panamax. Cae dentro del rango que cita la BCR (2.000 a 2.500 tn por pie).
+- 45.000 tn de carga base. Es un supuesto no verificado: la BCR cita Panamax de 60.000 a 65.000 tn.
+- 34 pies de calado de diseño del Panamax, necesarios para la carga completa (`calado_diseno_pies`). Es un supuesto no verificado y no tiene relación con los 34 pies de Buenos Aires ni con los 34 pies de calado garantizado del canal que cita la BCR.
 - Calado máximo seguro = (altura del río + 6,0 m de profundidad de canal - 0,6 m de margen bajo quilla) convertido a pies.
+
+`AGENTS.md` es la fuente única de estos números: si uno cambia, se actualiza ahí primero.
 
 ## Alcance
 
@@ -72,6 +77,9 @@ Las reglas de trabajo y el detalle del alcance están en [AGENTS.md](AGENTS.md),
 api/main.py          API FastAPI en un solo archivo: scraping, buques, modelo de calado, endpoints
 api/requirements.txt
 client/src/App.jsx   interfaz React en un solo archivo
+AGENTS.md            reglas de trabajo, alcance y supuestos del modelo
+.scratch/            specs y tickets (ver .scratch/top-off-demo/)
+docs/agents/         configuración del tracker local y las etiquetas de triage
 ```
 
 Stack: Python 3, FastAPI, Uvicorn, Requests y BeautifulSoup en el backend; React 19, Vite, Tailwind 4, Recharts y Lucide en el frontend.
@@ -122,9 +130,10 @@ La primera consulta de cada 5 minutos puede demorar unos segundos mientras vence
 
 ## Estado actual
 
-El alcance descripto arriba está definido pero el frontend todavía no lo implementa por completo. Pendiente:
+El alcance descripto arriba está definido pero el frontend todavía no lo implementa por completo. La especificación y los cuatro tickets están en `.scratch/top-off-demo/`. Pendiente:
 
-- Reemplazar el botón único de Bahía Blanca por la comparación de puertos con la fila "no desviar", y quitar el texto "por tren".
-- Agregar el aviso de "datos de demo" y corregir el indicador AIS.
+- Reemplazar el botón único de Bahía Blanca por la comparación de puertos con la fila "no desviar", y quitar el texto "por tren" de la interfaz (tickets 02 y 03).
+- Agregar el aviso de "datos de demo", la etiqueta "escenario crítico" y corregir el indicador AIS (ticket 01).
+- Ensayar el flujo completo de la demo (ticket 04).
 - Corregir el cálculo del lucro cesante a 72 hs, que hoy suma la pérdida de tres días de un mismo buque.
 - Manejar el caso de ahorro neto negativo, que hoy se muestra como "+$-450,000".
