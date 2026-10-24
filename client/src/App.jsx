@@ -69,12 +69,12 @@ function KpiCard({ icon: Icon, label, value, sub, tone = 'text-blue-600' }) {
   )
 }
 
-// Refleja el estado real de cada fuente: en vivo, fallback (valor por defecto) o sin vincular.
+// Refleja el estado real de cada fuente: en vivo, fallback (valor por defecto) o dato de demo.
 function Fuente({ nombre, estado }) {
   const info = {
     en_vivo: ['🟢', 'Datos en vivo'],
     simulado: ['🟡', 'Sin respuesta de la fuente: usando valor por defecto'],
-    sin_vincular: ['⚪', 'Sin vincular'],
+    demo: ['🟡', 'Datos simulados (demo)'],
   }[estado]
   return (
     <span title={info[1]} className="inline-flex items-center gap-1.5">
@@ -263,12 +263,18 @@ export default function App() {
               <p className="text-sm text-slate-500">{data.ubicacion} — agroexportación</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
-            <Fuente nombre="INA (Río)" estado={data.fuentes.ina} />
-            <span className="text-slate-300">|</span>
-            <Fuente nombre="BCR (Soja)" estado={data.fuentes.bcr} />
-            <span className="text-slate-300">|</span>
-            <Fuente nombre="AIS (Buque)" estado={buque ? 'en_vivo' : 'sin_vincular'} />
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Siempre visible: los días previos, la proyección, el AIS y los costos son demo. */}
+            <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700">
+              Datos de demo
+            </span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
+              <Fuente nombre="INA (Río)" estado={data.fuentes.ina} />
+              <span className="text-slate-300">|</span>
+              <Fuente nombre="BCR (Soja)" estado={data.fuentes.bcr} />
+              <span className="text-slate-300">|</span>
+              <Fuente nombre="AIS (Buque)" estado="demo" />
+            </div>
           </div>
         </header>
 
@@ -383,6 +389,9 @@ export default function App() {
             <section className={`${CARD} p-5`}>
               <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
                 <Anchor className="h-4 w-4 text-blue-600" /> Línea de flotación: histórico vs. proyección
+                <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold normal-case tracking-normal text-red-600">
+                  Escenario crítico
+                </span>
               </h2>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
