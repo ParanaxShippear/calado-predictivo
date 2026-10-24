@@ -28,7 +28,8 @@ import {
   X,
 } from 'lucide-react'
 
-const API_BASE = 'http://localhost:8000/api'
+const API_BASE =
+  import.meta.env.VITE_API_BASE ?? (import.meta.env.DEV ? 'http://localhost:8000/api' : '/api')
 
 // DEMO: costos del top-off. El buque carga parcial en Gran Rosario y navega al sur a completar.
 // Costo = días extra × costo diario del buque + premio del grano × toneladas completadas.
