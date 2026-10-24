@@ -208,7 +208,7 @@ function PantallaInicial({ imoInput, setImoInput, onSubmit, vinculando, error })
 }
 
 // Documento de la orden de desvío, dirigido a la agencia marítima. Se muestra al emitir la orden.
-function OrdenDesvio({ numero, emitidaEn, buque, opcion, tnParcial, tnCompletar, dia }) {
+function OrdenDesvio({ numero, emitidaEn, buque, opcion, tnParcial, tnCompletar, dia, pronostico, onDescargar }) {
   const fila = (etiqueta, valor, fuerte = false) => (
     <div className="flex justify-between gap-4 py-1.5">
       <dt className="text-slate-600">{etiqueta}</dt>
@@ -259,6 +259,39 @@ function OrdenDesvio({ numero, emitidaEn, buque, opcion, tnParcial, tnCompletar,
             {fila('Costo total', fmtUsd(opcion.costo))}
             {fila('Ahorro neto estimado', fmtUsdConSigno(opcion.ahorroNeto), true)}
           </dl>
+        </div>
+
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+            Anexo: pronóstico de calado
+          </h3>
+          <table className="mt-1 w-full text-left text-xs">
+            <thead className="text-slate-600">
+              <tr className="border-b border-slate-200">
+                <th scope="col" className="py-1.5 pr-2 font-medium">Fecha</th>
+                <th scope="col" className="py-1.5 pr-2 font-medium">Altura</th>
+                <th scope="col" className="py-1.5 pr-2 font-medium">Calado seguro</th>
+                <th scope="col" className="py-1.5 text-right font-medium">Tonelaje rec.</th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-800">
+              {pronostico.map((p) => (
+                <tr key={p.fecha} className="border-b border-slate-100">
+                  <td className="whitespace-nowrap py-1.5 pr-2 capitalize">{fmtFecha(p.fecha)}</td>
+                  <td className="whitespace-nowrap py-1.5 pr-2">{fmtM(p.altura_rio_m)}</td>
+                  <td className="whitespace-nowrap py-1.5 pr-2">{fmtFt(p.calado_maximo_seguro_pies)}</td>
+                  <td className="whitespace-nowrap py-1.5 text-right font-medium">{fmtTn(p.tonelaje_recomendado_tn)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <button
+            type="button"
+            onClick={onDescargar}
+            className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-700 underline-offset-2 hover:underline"
+          >
+            <Download className="h-4 w-4" /> Descargar anexo (CSV)
+          </button>
         </div>
       </div>
 
@@ -379,6 +412,8 @@ export default function App() {
   function exportarReporte() {
     const filas = [
       [
+        'Buque',
+        'IMO',
         'Fecha',
         'Altura río (m)',
         'Calado máximo seguro (ft)',
@@ -386,6 +421,8 @@ export default function App() {
         'Impacto económico (USD)',
       ],
       ...ventana.map((p) => [
+        data.buque.nombre,
+        data.buque.imo,
         p.fecha,
         p.altura_rio_m,
         p.calado_maximo_seguro_pies,
@@ -397,7 +434,7 @@ export default function App() {
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `reporte-calado-${fechaAnalisis}.csv`
+    a.download = `pronostico-calado-${data.buque.imo}-${fechaAnalisis}.csv`
     a.click()
     URL.revokeObjectURL(a.href)
     setExportado(true)
@@ -649,7 +686,7 @@ export default function App() {
                   className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
                 >
                   <Download className="h-4 w-4" />
-                  {exportado ? 'Reporte generado ✓' : 'Exportar reporte a agencia marítima'}
+                  {exportado ? 'Archivo descargado ✓' : 'Descargar pronóstico (CSV)'}
                 </button>
               </div>
               <div className="overflow-x-auto">
@@ -708,6 +745,8 @@ export default function App() {
                 tnParcial={peorDia.tonelaje_recomendado_tn}
                 tnCompletar={tnTopOff}
                 dia={peorDia}
+                pronostico={ventana}
+                onDescargar={exportarReporte}
               />
             )}
 
