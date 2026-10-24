@@ -21,7 +21,7 @@ Equipos de logística y comercialización de agroexportadoras del Gran Rosario, 
 Cerca del 75% de las exportaciones argentinas de granos, harinas y aceites sale por unas 20 terminales del Gran Rosario (75,7 M de tn en 2025, según la BCR). La bajante de 2021 costó más de USD 620 M al sector.
 
 **¿Por qué ahora?**
-Las bajantes extremas del Paraná siempre fueron recurrentes y además se ha comprobado que en los últimos años el nivel del río se ha vuelto más variable e impredecible debido a fenómenos climáticos. A pesar de todo esto la decisión sigue siendo manual. Los datos públicos (INA, BCR) y los modelos de proyección ya son accesibles para automatizar esa decisión.
+Las bajantes extremas del Paraná siempre fueron recurrentes y además se ha comprobado que en los últimos años el nivel del río se ha vuelto más variable e impredecible debido a fenómenos climáticos (fuentes: Instituto Nacional del Agua, Prefectura Naval Argentina e Instituto Nacional de Tecnología Agropecuaria). A pesar de todo esto la decisión sigue siendo manual. Los datos públicos (INA, BCR) y los modelos de proyección ya son accesibles para automatizar esa decisión.
 
 **¿Qué función cumple la AI en tu proyecto y cómo agrega valor?**
 Un modelo proyecta la altura del río a 72 hs y recomienda fecha de zarpe y puerto de top-off para minimizar el lucro cesante. En esta demo la proyección es simulada y las reglas del modelo son determinísticas. El siguiente paso es reemplazarla por un modelo entrenado con series históricas del INA. La razón de esta decisión es que estamos haciendo un MVP con tiempo limitado en una hackatón.
@@ -31,7 +31,7 @@ Un modelo proyecta la altura del río a 72 hs y recomienda fecha de zarpe y puer
 - **Track: Finanzas.** The repo frames the product as an agro-fintech command center (lucro cesante in USD, top-off cost comparison).
 - **AI answer is deliberately honest.** `AGENTS.md` puts ML/LLM out of scope and forbids claiming an AI model is live. The projection is simulated and the model rules are deterministic; the form says so.
 - **Market size uses only sourced figures.** The number of exporting companies was not found in any source, so it is not claimed. Figures are cited with their source below.
-- **"Por qué ahora" climate claim.** The sentence "el nivel del río se ha vuelto más variable e impredecible debido a fenómenos climáticos" is the team's wording and has no source in this repo. Add one before defending it in front of the jury.
+- **"Por qué ahora" climate claim.** The sentence "el nivel del río se ha vuelto más variable e impredecible debido a fenómenos climáticos" is the team's wording. It is now backed by INA, PNA and INTA (see the sources table). The links point to each body's official portal, not to a specific report; pick the exact report or page before quoting a number in front of the jury.
 
 ## Sources for the figures
 
@@ -39,6 +39,9 @@ Un modelo proyecta la altura del río a 72 hs y recomienda fecha de zarpe y puer
 |---|---|
 | ~75% of Argentine grain, meal and oil exports leave through Gran Rosario | [Infobae, citing BCR](https://www.infobae.com/economia/2026/06/02/ranking-mundial-la-argentina-fue-el-tercer-exportador-agricola-y-rosario-domino-el-comercio-global-de-granos-en-2025/); [iProfesional](https://www.iprofesional.com/comex/455992-gran-rosario-recupero-liderazgo-agroexportador-supero-estados-unidos-brasil). An older BCR analysis gave 77–80%, so the figures are not strictly comparable. |
 | 75,7 M tn shipped in 2025, first agro-export node in the world | [La Capital](https://www.lacapital.com.ar/economia/el-gran-rosario-volvio-ser-el-principal-nodo-agroexportador-del-mundo-n10262055.html) |
+| River level is more variable and unpredictable due to climate phenomena | [Instituto Nacional del Agua (INA)](https://www.ina.gob.ar/): official body for Paraná monitoring and hydrological alerts; its reports tie the 2019–2023 extraordinary low water to a persistent drought in the La Plata basin, worsened by La Niña, with 2021 levels not seen since 1944. |
+| (same claim) | [Prefectura Naval Argentina (PNA), Registro del estado de los ríos](https://contenidosweb.prefecturanaval.gob.ar/alturas/): daily river heights by port, the record that shows the level swings. |
+| (same claim) | [Instituto Nacional de Tecnología Agropecuaria (INTA)](https://www.argentina.gob.ar/inta): technical reports, done with INA, describe the low water as an extreme hydrological and climatic drought beyond natural variability and link it to climate change. |
 | ~20 terminals | BCR report of May 2026: 30 port terminals over 70 km, 18 dispatch agro products. Another source (River Plate Shipping Guide, 2024 data) counts 34 and 22. Hence "unas 20". |
 | 2021 bajante cost more than USD 620 M | [Bloomberg Línea, citing BCR](https://www.bloomberglinea.com/2021/09/25/bajante-del-parana-argentina-ya-perdio-us-620m-y-los-pronosticos-no-mejoran/) |
 | 2022: almost USD 280 M in five months, USD 138 M of it falso flete | [BAE Negocios, citing BCR](https://www.baenegocios.com/economia/Por-la-bajante-del-Parana-se-perdieron-280-millones-de-dolares-en-cinco-meses-20220513-0109.html) |
