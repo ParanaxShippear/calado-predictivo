@@ -40,7 +40,8 @@ The vessel loads partially at Gran Rosario and sails south to complete its cargo
 - Never read or write `.env`, keys or credentials. Every external call gets a timeout and a fallback.
 
 ## Hackathon constraints
-- Scope is closed. IN: the existing dashboard, a "datos de demo" badge, an AIS indicator that never shows green, a top-off port comparison (Bahía Blanca, Quequén) with demo costs, a "escenario crítico" label, rehearsal. OUT: real scraping, ML/LLM, live AIS, agencia view, tests, README roadmap. If a request is not IN, say no.
+- Scope is closed. IN: the existing dashboard, a "datos de demo" badge, an AIS indicator that never shows green, a top-off port comparison (Bahía Blanca, Quequén) with demo costs, a "no desviar" row, visible assumptions, a "escenario crítico" label, rehearsal. OUT: real scraping, ML/LLM, live AIS, agencia view, tests, README roadmap. If a request is not IN, say no.
+- Top-off implementation: frontend constants only (2 ports, demo costs, 2 cost components). No new endpoint, no API table, no extra cost components.
 - Primary persona: the agroexportadora. Golden path: today -> chart -> lucro cesante -> top-off port comparison -> export CSV. Must work on every commit.
 - Default vessel is the Panamax. Nobody links an IMO in the demo.
 - Never claim INA/BCR data or an AI model is live.
