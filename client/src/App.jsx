@@ -290,7 +290,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">Calado Predictivo · Command Center</h1>
-              <p className="text-sm text-slate-500">{data.ubicacion} — agroexportación</p>
+              <p className="text-sm text-slate-500">{data.ubicacion} - agroexportación</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
