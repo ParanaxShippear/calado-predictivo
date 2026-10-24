@@ -18,14 +18,11 @@ import {
   CheckCircle2,
   DollarSign,
   Download,
-  Lightbulb,
   Radar,
   Route,
-  Ruler,
   Send,
   ShieldCheck,
   Ship,
-  Target,
   TrendingDown,
   Waves,
   X,
@@ -51,18 +48,13 @@ const fmtDec = (n, d) => n.toLocaleString('es-AR', { minimumFractionDigits: d, m
 const fmtM = (n) => `${fmtDec(n, 2)} m`
 const fmtFt = (n) => `${fmtDec(n, 2)} ft`
 const fmtUsdConSigno = (n) => `${n < 0 ? '-' : '+'}${fmtUsd(Math.abs(n))}`
-const fmtFecha = (iso) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString('es-AR', {
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit',
-  })
-const fmtDiaCorto = (iso) => {
-  const s = new Date(`${iso}T12:00:00`).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' })
-  return s.charAt(0).toUpperCase() + s.slice(1).replace('.', '')
-}
-const fmtDiaSemana = (iso) =>
-  new Date(`${iso}T12:00:00`).toLocaleDateString('es-AR', { weekday: 'long' })
+const fecha12 = (iso) => new Date(`${iso}T12:00:00`)
+const diaSemana = (iso) => fecha12(iso).toLocaleDateString('es-AR', { weekday: 'long' })
+const diaMes = (iso) => fecha12(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })
+const capitalizar = (t) => t.charAt(0).toUpperCase() + t.slice(1)
+// "Martes 27/10" para tablas y ejes; "martes 27/10" dentro de una frase. El día va siempre completo.
+const fmtFecha = (iso) => `${capitalizar(diaSemana(iso))} ${diaMes(iso)}`
+const fmtFechaTexto = (iso) => `${diaSemana(iso)} ${diaMes(iso)}`
 
 const hoyISO = () => {
   const d = new Date()
@@ -106,6 +98,19 @@ function Fuente({ nombre, estado }) {
       <span aria-hidden="true" className={`h-2 w-2 rounded-full ${punto}`} />
       {nombre}: {texto}
     </span>
+  )
+}
+
+// Tick del eje X: nombre completo del dia y debajo la fecha.
+function TickDia({ x, y, payload }) {
+  const [dia, fecha] = fmtFecha(payload.value).split(' ')
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text textAnchor="middle" fill={COLOR_GRAFICO.eje} fontSize={12}>
+        <tspan x={0} dy={14}>{dia}</tspan>
+        <tspan x={0} dy={14}>{fecha}</tspan>
+      </text>
+    </g>
   )
 }
 
@@ -207,97 +212,175 @@ function PantallaInicial({ imoInput, setImoInput, onSubmit, vinculando, error })
   )
 }
 
-// Documento de la orden de desvío, dirigido a la agencia marítima. Se muestra al emitir la orden.
-function OrdenDesvio({ numero, emitidaEn, buque, opcion, tnParcial, tnCompletar, dia, pronostico, onDescargar }) {
-  const fila = (etiqueta, valor, fuerte = false) => (
-    <div className="flex justify-between gap-4 py-1.5">
-      <dt className="text-slate-600">{etiqueta}</dt>
-      <dd className={`text-right ${fuerte ? 'font-bold text-slate-800' : 'font-medium text-slate-800'}`}>{valor}</dd>
+// Documento de la orden de desvío, dirigido a la agencia marítima. Es un borrador que se actualiza con la
+// opción elegida; al emitir la orden pasa a "enviada".
+function Linea({ signo, etiqueta, valor, tono = 'text-slate-800', fuerte = false }) {
+  const lectura = { '+': 'más', '−': 'menos', '=': 'resultado' }[signo]
+  return (
+    <div className={`flex items-baseline gap-2 py-1 ${signo === '=' ? 'border-t border-slate-300' : ''}`}>
+      <span aria-hidden="true" className={`w-4 text-center font-bold ${tono}`}>{signo}</span>
+      <span className="sr-only">{lectura}</span>
+      <dt className={`flex-1 ${fuerte ? 'font-bold text-slate-800' : 'text-slate-600'}`}>{etiqueta}</dt>
+      <dd className={`text-right ${fuerte ? 'font-bold' : 'font-medium'} ${tono}`}>{valor}</dd>
     </div>
   )
+}
+
+function Dato({ etiqueta, valor }) {
   return (
-    <article aria-label="Orden de desvío" className={`${CARD} overflow-hidden text-sm`}>
-      <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
+    <div>
+      <dt className="text-xs text-slate-600">{etiqueta}</dt>
+      <dd className="font-medium text-slate-800">{valor}</dd>
+    </div>
+  )
+}
+
+function OrdenDesvio({
+  numero,
+  emitidaEn,
+  buque,
+  opcion,
+  tnParcial,
+  tnCompletar,
+  dia,
+  pronostico,
+  onEmitir,
+  onDescargar,
+  descargado,
+}) {
+  const desvia = opcion.id !== 'no-desviar'
+  const emitida = emitidaEn !== null
+  const anio = emitidaEn ? emitidaEn.getFullYear() : hoyISO().slice(0, 4)
+  return (
+    <article
+      aria-label={desvia ? 'Orden de desvío' : 'Registro de decisión'}
+      className={`${CARD} overflow-hidden text-sm`}
+    >
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-3">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">Orden de desvío</div>
-          <div className="mt-0.5 text-base font-bold text-slate-800">
-            N.º OD-{emitidaEn.getFullYear()}-{String(numero).padStart(4, '0')}
+          <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+            {desvia ? 'Orden de desvío' : 'Decisión: no desviar'}
           </div>
+          {desvia && (
+            <div className="text-base font-bold text-slate-800">N.º OD-{anio}-{String(numero).padStart(4, '0')}</div>
+          )}
         </div>
         <div className="text-right text-xs text-slate-600">
-          <div>Emitida el</div>
-          <div className="font-medium text-slate-800">
-            {emitidaEn.toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}
-          </div>
+          {emitida ? (
+            <>
+              <div>{desvia ? 'Emitida el' : 'Registrada el'}</div>
+              <div className="font-medium text-slate-800">
+                {emitidaEn.toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}
+              </div>
+            </>
+          ) : (
+            <div className="font-semibold uppercase tracking-wider text-amber-700">Borrador</div>
+          )}
         </div>
       </div>
 
-      <div className="space-y-4 px-5 py-4">
-        <dl className="divide-y divide-slate-100">
-          {fila('Para', 'Agencia marítima')}
-          {fila('Buque', `${buque.nombre} (${buque.tipo})`)}
-          {fila('IMO', buque.imo)}
+      <div className="space-y-3 px-5 py-3">
+        <dl className={`grid gap-x-4 gap-y-1 ${desvia ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          {desvia && <Dato etiqueta="Para" valor="Agencia marítima" />}
+          <Dato etiqueta="Buque" valor={`${buque.nombre} (${buque.tipo})`} />
+          <Dato etiqueta="IMO" valor={buque.imo} />
         </dl>
 
         <div>
           <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Instrucción</h3>
-          <p className="mt-1 text-slate-800">
-            Zarpar de Gran Rosario con carga parcial de <strong>{fmtTn(tnParcial)}</strong> y completar{' '}
-            <strong>{fmtTn(tnCompletar)}</strong> en <strong>{opcion.nombre}</strong>.
-          </p>
-          <p className="mt-1 text-slate-600">
-            Motivo: bajante del Paraná. Calado seguro previsto de {fmtFt(dia.calado_maximo_seguro_pies)} (altura de{' '}
-            {fmtM(dia.altura_rio_m)}) al {fmtFecha(dia.fecha)}.
-          </p>
+          {desvia ? (
+            <>
+              <p className="mt-0.5 text-slate-800">
+                Zarpar de Gran Rosario con carga parcial de <strong>{fmtTn(tnParcial)}</strong> y completar{' '}
+                <strong>{fmtTn(tnCompletar)}</strong> en <strong>{opcion.nombre}</strong>.
+              </p>
+              <p className="mt-0.5 text-slate-600">
+                Motivo: bajante del Paraná. Calado seguro previsto de {fmtFt(dia.calado_maximo_seguro_pies)} (altura
+                de {fmtM(dia.altura_rio_m)}) el {fmtFechaTexto(dia.fecha)}.
+              </p>
+            </>
+          ) : (
+            <p className="mt-0.5 text-slate-800">
+              El buque sale de Gran Rosario con la carga que permite el calado (<strong>{fmtTn(tnParcial)}</strong>).
+              No se genera orden de desvío.
+            </p>
+          )}
         </div>
 
-        <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Costo estimado del top-off</h3>
-          <dl className="mt-1 divide-y divide-slate-100">
-            {fila(`Días extra de buque (${opcion.diasExtra})`, fmtUsd(opcion.costoDias))}
-            {fila('Premio del grano', fmtUsd(opcion.costoPremio))}
-            {fila('Costo total', fmtUsd(opcion.costo))}
-            {fila('Ahorro neto estimado', fmtUsdConSigno(opcion.ahorroNeto), true)}
-          </dl>
-        </div>
+        {desvia && (
+          <div>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                Resultado económico estimado
+              </h3>
+              <span className="text-xs text-slate-600">Costo total del top-off: {fmtUsd(opcion.costo)}</span>
+            </div>
+            <dl>
+              <Linea signo="+" etiqueta="Lucro cesante evitado" valor={fmtUsd(dia.impacto_usd)} tono="text-emerald-700" />
+              <Linea
+                signo="−"
+                etiqueta={`Días extra de buque (${opcion.diasExtra})`}
+                valor={fmtUsd(opcion.costoDias)}
+                tono="text-red-700"
+              />
+              <Linea signo="−" etiqueta="Premio del grano" valor={fmtUsd(opcion.costoPremio)} tono="text-red-700" />
+              <Linea signo="=" etiqueta="Ahorro neto estimado" valor={fmtUsdConSigno(opcion.ahorroNeto)} fuerte />
+            </dl>
+          </div>
+        )}
 
         <div>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-            Anexo: pronóstico de calado
-          </h3>
-          <table className="mt-1 w-full text-left text-xs">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+              Anexo: pronóstico de calado
+            </h3>
+            <button
+              type="button"
+              onClick={onDescargar}
+              className="-my-2 inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-blue-700 underline-offset-2 hover:underline"
+            >
+              <Download className="h-4 w-4" /> {descargado ? 'Archivo descargado ✓' : 'Descargar (CSV)'}
+            </button>
+          </div>
+          <table className="w-full text-left text-xs">
             <thead className="text-slate-600">
               <tr className="border-b border-slate-200">
-                <th scope="col" className="py-1.5 pr-2 font-medium">Fecha</th>
-                <th scope="col" className="py-1.5 pr-2 font-medium">Altura</th>
-                <th scope="col" className="py-1.5 pr-2 font-medium">Calado seguro</th>
-                <th scope="col" className="py-1.5 text-right font-medium">Tonelaje rec.</th>
+                <th scope="col" className="py-1 pr-2 font-medium">Fecha</th>
+                <th scope="col" className="py-1 pr-2 font-medium">Altura</th>
+                <th scope="col" className="py-1 pr-2 font-medium">Calado seguro</th>
+                <th scope="col" className="py-1 text-right font-medium">Tonelaje rec.</th>
               </tr>
             </thead>
             <tbody className="text-slate-800">
               {pronostico.map((p) => (
                 <tr key={p.fecha} className="border-b border-slate-100">
-                  <td className="whitespace-nowrap py-1.5 pr-2 capitalize">{fmtFecha(p.fecha)}</td>
-                  <td className="whitespace-nowrap py-1.5 pr-2">{fmtM(p.altura_rio_m)}</td>
-                  <td className="whitespace-nowrap py-1.5 pr-2">{fmtFt(p.calado_maximo_seguro_pies)}</td>
-                  <td className="whitespace-nowrap py-1.5 text-right font-medium">{fmtTn(p.tonelaje_recomendado_tn)}</td>
+                  <td className="whitespace-nowrap py-1 pr-2">{fmtFecha(p.fecha)}</td>
+                  <td className="whitespace-nowrap py-1 pr-2">{fmtM(p.altura_rio_m)}</td>
+                  <td className="whitespace-nowrap py-1 pr-2">{fmtFt(p.calado_maximo_seguro_pies)}</td>
+                  <td className="whitespace-nowrap py-1 text-right font-medium">{fmtTn(p.tonelaje_recomendado_tn)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <button
-            type="button"
-            onClick={onDescargar}
-            className="mt-2 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-blue-700 underline-offset-2 hover:underline"
-          >
-            <Download className="h-4 w-4" /> Descargar anexo (CSV)
-          </button>
         </div>
       </div>
 
-      <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-600">
-        <div className="font-semibold text-slate-800">Estado: enviada a la agencia marítima</div>
-        <div className="mt-0.5">Documento generado por Paranax con datos simulados.</div>
+      <div className="space-y-2 border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-600">
+        {emitida ? (
+          <div role="status" className="flex items-center gap-2 text-sm font-semibold text-emerald-700">
+            <CheckCircle2 className="h-5 w-5 shrink-0" />
+            {desvia ? 'Enviada a la agencia marítima' : 'Decisión registrada'}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onEmitir}
+            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+          >
+            <Send className="h-4 w-4" /> {desvia ? 'Emitir Orden de Desvío' : 'Registrar decisión: no desviar'}
+          </button>
+        )}
+        <div>Documento generado por Paranax con datos simulados.</div>
       </div>
     </article>
   )
@@ -481,10 +564,8 @@ export default function App() {
   const yMin = Math.floor((Math.min(...alturas) - 0.2) * 10) / 10
   const yMax = Math.ceil((Math.max(...alturas) + 0.2) * 10) / 10
 
-  // Mitigación: mejor/peor día de la ventana.
-  const mejorDia = ventana.reduce((a, b) => (b.impacto_usd < a.impacto_usd ? b : a))
+  // Peor día de la ventana de 72 hs: base del top-off.
   const peorDia = ventana.reduce((a, b) => (b.impacto_usd > a.impacto_usd ? b : a))
-  const ahorroArbitraje = peorDia.impacto_usd - mejorDia.impacto_usd
 
   // Top-off: reusa el peor día de la ventana (tonelaje no cargado e impacto). "No desviar" es el piso (0).
   const tnTopOff = peorDia.tonelaje_no_cargado_tn
@@ -503,7 +584,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      <main className="mx-auto max-w-7xl space-y-6 p-6">
+      <main className="mx-auto max-w-7xl space-y-5 p-6">
         <Encabezado ubicacion={data.ubicacion} fuentes={data.fuentes} />
 
         {/* Barra de controles */}
@@ -575,7 +656,7 @@ export default function App() {
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <KpiCard
             icon={Waves}
-            label={data.es_hoy ? 'Altura Actual' : `Altura al ${fmtDiaCorto(fechaAnalisis)}`}
+            label={data.es_hoy ? 'Altura Actual' : `Altura al ${fmtFechaTexto(fechaAnalisis)}`}
             value={fmtM(data.altura_actual_m)}
             sub="Hidrómetro Rosario"
           />
@@ -616,9 +697,10 @@ export default function App() {
           )}
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-10">
-          {/* Columna izquierda: gráfico + tabla */}
-          <div className="order-2 flex min-w-0 flex-col gap-6 lg:order-1 lg:col-span-6">
+        <div className="grid items-start gap-6 lg:grid-cols-12">
+          {/* En pantallas angostas: simulador, orden y despues el grafico. En anchas: grafico y simulador a la
+              izquierda, la orden fija a la derecha para verla completa mientras se decide. */}
+          <div className="order-3 min-w-0 lg:order-none lg:col-span-7 lg:col-start-1 lg:row-start-1">
             <section className={`${CARD} p-5`}>
               <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
                 <Anchor className="h-4 w-4 text-blue-600" /> Altura del río: histórico vs. proyección
@@ -626,11 +708,18 @@ export default function App() {
                   Escenario crítico
                 </span>
               </h2>
-              <div className="h-80">
+              <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid stroke={COLOR_GRAFICO.grilla} strokeDasharray="3 3" />
-                    <XAxis dataKey="fecha" tickFormatter={fmtFecha} stroke={COLOR_GRAFICO.eje} fontSize={12} />
+                    <XAxis
+                      dataKey="fecha"
+                      tick={<TickDia />}
+                      tickFormatter={diaSemana}
+                      interval="preserveStartEnd"
+                      height={44}
+                      stroke={COLOR_GRAFICO.eje}
+                    />
                     <YAxis
                       domain={[yMin, yMax]}
                       unit=" m"
@@ -672,101 +761,30 @@ export default function App() {
                 </ResponsiveContainer>
               </div>
             </section>
-
-            <section className={`${CARD} p-5`}>
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
-                  <Ruler className="h-4 w-4 text-blue-600" />
-                  {data.es_pasado
-                    ? 'Recomendación de carga · 3 días siguientes'
-                    : 'Recomendación de carga · próximos 3 días'}
-                </h2>
-                <button
-                  onClick={exportarReporte}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                >
-                  <Download className="h-4 w-4" />
-                  {exportado ? 'Archivo descargado ✓' : 'Descargar pronóstico (CSV)'}
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="text-xs uppercase tracking-wider text-slate-600">
-                    <tr className="border-b border-slate-200">
-                      <th scope="col" className="py-2 pr-4">Fecha</th>
-                      <th scope="col" className="py-2 pr-4">Altura del río</th>
-                      <th scope="col" className="py-2 pr-4">Calado máx. seguro</th>
-                      <th scope="col" className="py-2 pr-4">Tonelaje recomendado</th>
-                      <th scope="col" className="py-2">Impacto económico</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ventana.map((p) => (
-                      <tr key={p.fecha} className="border-b border-slate-100">
-                        <td className="whitespace-nowrap py-3 pr-4 font-medium capitalize">{fmtFecha(p.fecha)}</td>
-                        <td className="py-3 pr-4">{fmtM(p.altura_rio_m)}</td>
-                        <td className="py-3 pr-4">{fmtFt(p.calado_maximo_seguro_pies)}</td>
-                        <td className="py-3 pr-4 font-semibold">{fmtTn(p.tonelaje_recomendado_tn)}</td>
-                        <td className="py-3 font-semibold text-red-700">{fmtUsdPerdida(p.impacto_usd)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
           </div>
 
-          {/* Columna derecha: Centro de Decisiones (primero en pantallas angostas) */}
-          <aside className="order-1 flex min-w-0 flex-col gap-4 lg:order-2 lg:col-span-4">
-            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
-              <Target className="h-4 w-4 text-blue-600" /> Centro de Decisiones
-            </h2>
-
-            {ordenEmitida && (
-              <div
-                role="status"
-                className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 shadow-sm"
-              >
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
-                <span>
-                  {opcionElegida.id === 'no-desviar'
-                    ? 'Decisión registrada: no desviar. El buque sale con la carga que permite el calado.'
-                    : `Orden #${NUMERO_ORDEN_DEMO} emitida: el buque se desvía al sur para completar la carga en ${opcionElegida.nombre}.`}
-                </span>
-              </div>
-            )}
-
-            {ordenEmitida && opcionElegida.id !== 'no-desviar' && emitidaEn && (
-              <OrdenDesvio
-                numero={NUMERO_ORDEN_DEMO}
-                emitidaEn={emitidaEn}
-                buque={data.buque}
-                opcion={opcionElegida}
-                tnParcial={peorDia.tonelaje_recomendado_tn}
-                tnCompletar={tnTopOff}
-                dia={peorDia}
-                pronostico={ventana}
-                onDescargar={exportarReporte}
-              />
-            )}
-
+          <div className="order-1 min-w-0 lg:order-none lg:col-span-7 lg:col-start-1 lg:row-start-2">
             <div className={`${CARD} p-5`}>
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-700">
                 <Route className="h-4 w-4" /> Simulador Top-off
               </div>
-              <div className="mt-3 rounded-lg bg-emerald-50 p-4">
-                <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Mejor opción</div>
-                <div className="mt-1 text-xl font-bold text-slate-800">
-                  {opcionMejor.id === 'no-desviar' ? 'No desviar' : `Top-off en ${opcionMejor.nombre}`}
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg bg-emerald-50 px-4 py-3">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Mejor opción</div>
+                  <div className="text-base font-bold text-slate-800">
+                    {opcionMejor.id === 'no-desviar' ? 'No desviar' : `Top-off en ${opcionMejor.nombre}`}
+                  </div>
                 </div>
-                <div className="mt-1 text-2xl font-bold text-emerald-700">
-                  {opcionMejor.id === 'no-desviar' ? 'Sin ahorro' : fmtUsdConSigno(opcionMejor.ahorroNeto)}
-                </div>
-                <div className="text-sm text-emerald-700">
-                  {opcionMejor.id === 'no-desviar' ? 'Ningún puerto compensa su costo' : 'de ahorro neto'}
+                <div className="text-right">
+                  <div className="text-xl font-bold text-emerald-700">
+                    {opcionMejor.id === 'no-desviar' ? 'Sin ahorro' : fmtUsdConSigno(opcionMejor.ahorroNeto)}
+                  </div>
+                  <div className="text-xs text-emerald-700">
+                    {opcionMejor.id === 'no-desviar' ? 'Ningún puerto compensa su costo' : 'de ahorro neto'}
+                  </div>
                 </div>
               </div>
-              <table className="mt-4 w-full text-left text-sm">
+              <table className="mt-2 w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-wider text-slate-600">
                   <tr className="border-b border-blue-200">
                     <th scope="col" className="py-1.5 pr-2">Opción</th>
@@ -799,11 +817,6 @@ export default function App() {
                           {esMejor && (
                             <span className="text-xs font-semibold text-emerald-700">Mejor opción</span>
                           )}
-                          {o.costo > 0 && (
-                            <div className="text-xs text-slate-600">
-                              Días extra {fmtUsd(o.costoDias)} · Premio del grano {fmtUsd(o.costoPremio)}
-                            </div>
-                          )}
                         </td>
                         <td className="whitespace-nowrap py-2 pr-2 text-right align-top font-semibold text-red-700">
                           {o.costo > 0 ? `-${fmtUsd(o.costo)}` : fmtUsd(0)}
@@ -818,39 +831,26 @@ export default function App() {
                   })}
                 </tbody>
               </table>
-              <button
-                onClick={emitirDesvio}
-                disabled={ordenEmitida}
-                className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600 disabled:shadow-none"
-              >
-                {ordenEmitida ? (
-                  <>
-                    <CheckCircle2 className="h-4 w-4" />{' '}
-                    {opcionElegida.id === 'no-desviar' ? 'Decisión registrada' : 'Orden Ejecutada'}
-                  </>
-                ) : opcionElegida.id === 'no-desviar' ? (
-                  <>
-                    <Send className="h-4 w-4" /> Registrar decisión: no desviar
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4" /> Emitir Orden de Desvío
-                  </>
-                )}
-              </button>
+              <p className="mt-3 text-xs text-slate-600">
+                Elegí una opción y emití la orden desde el documento.
+              </p>
             </div>
+          </div>
 
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
-              <div className="text-xs font-semibold uppercase tracking-wider text-blue-700">
-                Arbitraje Logístico
-              </div>
-              <p className="mt-2 flex items-center gap-2 text-lg font-bold text-slate-800">
-                <Lightbulb className="h-5 w-5 shrink-0 text-blue-600" /> Adelantar zarpe al {fmtDiaCorto(mejorDia.fecha)}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-emerald-700">
-                + {fmtUsd(ahorroArbitraje)} de ahorro frente al {fmtDiaSemana(peorDia.fecha)}
-              </p>
-            </div>
+          <aside className="order-2 min-w-0 lg:order-none lg:sticky lg:top-6 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
+            <OrdenDesvio
+              numero={NUMERO_ORDEN_DEMO}
+              emitidaEn={ordenEmitida ? emitidaEn : null}
+              buque={data.buque}
+              opcion={opcionElegida}
+              tnParcial={peorDia.tonelaje_recomendado_tn}
+              tnCompletar={tnTopOff}
+              dia={peorDia}
+              pronostico={ventana}
+              onEmitir={emitirDesvio}
+              onDescargar={exportarReporte}
+              descargado={exportado}
+            />
           </aside>
         </div>
       </main>
