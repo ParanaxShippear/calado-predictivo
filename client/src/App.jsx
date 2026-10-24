@@ -44,8 +44,11 @@ const PUERTOS_TOP_OFF = [
 ]
 
 const fmtTn = (n) => `${n.toLocaleString('es-AR')} tn`
-const fmtUsd = (n) => `$${n.toLocaleString('en-US')}`
-const fmtUsdPerdida = (n) => `${n === 0 ? '' : '-'}$${Math.abs(n).toLocaleString('en-US')} USD`
+const fmtUsd = (n) => `USD ${n.toLocaleString('es-AR')}`
+const fmtUsdPerdida = (n) => `${n === 0 ? '' : '-'}${fmtUsd(Math.abs(n))}`
+const fmtDec = (n, d) => n.toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d })
+const fmtM = (n) => `${fmtDec(n, 2)} m`
+const fmtFt = (n) => `${fmtDec(n, 2)} ft`
 const fmtUsdConSigno = (n) => `${n < 0 ? '-' : '+'}${fmtUsd(Math.abs(n))}`
 const fmtFecha = (iso) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-AR', {
@@ -101,8 +104,8 @@ function ChartTooltip({ active, payload, label }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 shadow-md">
       <div className="mb-1 font-semibold">{fmtFecha(label)}</div>
-      <div>Altura: {p.altura_rio_m.toFixed(2)} m</div>
-      <div>Calado seguro: {p.calado_maximo_seguro_pies} ft</div>
+      <div>Altura: {fmtM(p.altura_rio_m)}</div>
+      <div>Calado seguro: {fmtFt(p.calado_maximo_seguro_pies)}</div>
       <div className="text-slate-600">{p.tipo === 'prediccion' ? 'Proyección' : 'Histórico'}</div>
     </div>
   )
@@ -378,13 +381,13 @@ export default function App() {
           <KpiCard
             icon={Waves}
             label={data.es_hoy ? 'Altura Actual' : `Altura al ${fmtDiaCorto(fechaAnalisis)}`}
-            value={`${data.altura_actual_m.toFixed(2)} m`}
+            value={fmtM(data.altura_actual_m)}
             sub="Hidrómetro Rosario"
           />
           <KpiCard
             icon={TrendIcon}
             label="Tendencia a 72hs"
-            value={`${resumen.tendencia_72hs_m > 0 ? '+' : ''}${resumen.tendencia_72hs_m.toFixed(2)} m`}
+            value={`${resumen.tendencia_72hs_m > 0 ? '+' : ''}${fmtM(resumen.tendencia_72hs_m)}`}
             sub={baja ? 'Bajante en curso' : 'Río en crecida'}
             tone={baja ? 'text-red-700' : 'text-emerald-700'}
           />
@@ -399,7 +402,7 @@ export default function App() {
             <KpiCard
               icon={ShieldCheck}
               label="Ahorro Logístico Asegurado"
-              value={`${fmtUsdConSigno(ahorroNetoDesvio)} USD`}
+              value={fmtUsdConSigno(ahorroNetoDesvio)}
               sub={
                 opcionElegida.id === 'no-desviar'
                   ? 'Sin desvío: no hay costo ni ahorro de top-off'
@@ -438,7 +441,7 @@ export default function App() {
                       unit=" m"
                       stroke="#334155"
                       fontSize={12}
-                      tickFormatter={(v) => v.toFixed(1)}
+                      tickFormatter={(v) => fmtDec(v, 1)}
                     />
                     <Tooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -506,8 +509,8 @@ export default function App() {
                     {ventana.map((p) => (
                       <tr key={p.fecha} className="border-b border-slate-100">
                         <td className="py-3 pr-4 font-medium capitalize">{fmtFecha(p.fecha)}</td>
-                        <td className="py-3 pr-4">{p.altura_rio_m.toFixed(2)} m</td>
-                        <td className="py-3 pr-4">{p.calado_maximo_seguro_pies} ft</td>
+                        <td className="py-3 pr-4">{fmtM(p.altura_rio_m)}</td>
+                        <td className="py-3 pr-4">{fmtFt(p.calado_maximo_seguro_pies)}</td>
                         <td className="py-3 pr-4 font-semibold">{fmtTn(p.tonelaje_recomendado_tn)}</td>
                         <td className="py-3 font-semibold text-red-700">{fmtUsdPerdida(p.impacto_usd)}</td>
                       </tr>
@@ -548,7 +551,7 @@ export default function App() {
                 💡 Adelantar zarpe al {fmtDiaCorto(mejorDia.fecha)}
               </p>
               <p className="mt-1 text-sm font-semibold text-emerald-700">
-                + {fmtUsd(ahorroArbitraje)} USD de ahorro frente al {fmtDiaSemana(peorDia.fecha)}
+                + {fmtUsd(ahorroArbitraje)} de ahorro frente al {fmtDiaSemana(peorDia.fecha)}
               </p>
             </div>
 
@@ -613,7 +616,7 @@ export default function App() {
                 </tbody>
               </table>
               <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-slate-600">
-                <li>Costo = días extra de buque (USD {COSTO_DIARIO_BUQUE_USD.toLocaleString('en-US')} por día, demo) + premio del grano por tonelada completada.</li>
+                <li>Costo = días extra de buque ({fmtUsd(COSTO_DIARIO_BUQUE_USD)} por día, demo) + premio del grano por tonelada completada.</li>
                 {PUERTOS_TOP_OFF.map((p) => (
                   <li key={p.id}>
                     {p.nombre}: {p.diasExtra} días extra (demo) y USD {p.premioUsdTn}/tn de premio del grano (
