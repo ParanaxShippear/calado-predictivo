@@ -207,6 +207,69 @@ function PantallaInicial({ imoInput, setImoInput, onSubmit, vinculando, error })
   )
 }
 
+// Documento de la orden de desvío, dirigido a la agencia marítima. Se muestra al emitir la orden.
+function OrdenDesvio({ numero, emitidaEn, buque, opcion, tnParcial, tnCompletar, dia }) {
+  const fila = (etiqueta, valor, fuerte = false) => (
+    <div className="flex justify-between gap-4 py-1.5">
+      <dt className="text-slate-600">{etiqueta}</dt>
+      <dd className={`text-right ${fuerte ? 'font-bold text-slate-800' : 'font-medium text-slate-800'}`}>{valor}</dd>
+    </div>
+  )
+  return (
+    <article aria-label="Orden de desvío" className={`${CARD} overflow-hidden text-sm`}>
+      <div className="flex items-start justify-between gap-3 border-b border-slate-200 bg-slate-50 px-5 py-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">Orden de desvío</div>
+          <div className="mt-0.5 text-base font-bold text-slate-800">
+            N.º OD-{emitidaEn.getFullYear()}-{String(numero).padStart(4, '0')}
+          </div>
+        </div>
+        <div className="text-right text-xs text-slate-600">
+          <div>Emitida el</div>
+          <div className="font-medium text-slate-800">
+            {emitidaEn.toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-4 px-5 py-4">
+        <dl className="divide-y divide-slate-100">
+          {fila('Para', 'Agencia marítima')}
+          {fila('Buque', `${buque.nombre} (${buque.tipo})`)}
+          {fila('IMO', buque.imo)}
+        </dl>
+
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Instrucción</h3>
+          <p className="mt-1 text-slate-800">
+            Zarpar de Gran Rosario con carga parcial de <strong>{fmtTn(tnParcial)}</strong> y completar{' '}
+            <strong>{fmtTn(tnCompletar)}</strong> en <strong>{opcion.nombre}</strong>.
+          </p>
+          <p className="mt-1 text-slate-600">
+            Motivo: bajante del Paraná. Calado seguro previsto de {fmtFt(dia.calado_maximo_seguro_pies)} (altura de{' '}
+            {fmtM(dia.altura_rio_m)}) al {fmtFecha(dia.fecha)}.
+          </p>
+        </div>
+
+        <div>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Costo estimado del top-off</h3>
+          <dl className="mt-1 divide-y divide-slate-100">
+            {fila(`Días extra de buque (${opcion.diasExtra})`, fmtUsd(opcion.costoDias))}
+            {fila('Premio del grano', fmtUsd(opcion.costoPremio))}
+            {fila('Costo total', fmtUsd(opcion.costo))}
+            {fila('Ahorro neto estimado', fmtUsdConSigno(opcion.ahorroNeto), true)}
+          </dl>
+        </div>
+      </div>
+
+      <div className="border-t border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-600">
+        <div className="font-semibold text-slate-800">Estado: enviada a la agencia marítima</div>
+        <div className="mt-0.5">Documento generado por Paranax con datos simulados.</div>
+      </div>
+    </article>
+  )
+}
+
 export default function App() {
   const [fecha, setFecha] = useState(hoyISO)
   const [data, setData] = useState(null)
@@ -216,6 +279,7 @@ export default function App() {
   const [ordenEmitida, setOrdenEmitida] = useState(false)
   // null = se usa la mejor opción; vuelve a null al cambiar la fecha o el buque.
   const [seleccionId, setSeleccionId] = useState(null)
+  const [emitidaEn, setEmitidaEn] = useState(null)
 
   const [imoInput, setImoInput] = useState('')
   const [buque, setBuque] = useState(null)
@@ -308,6 +372,7 @@ export default function App() {
   const ventana = data?.serie.filter((p) => p.fecha > fechaAnalisis) ?? []
 
   function emitirDesvio() {
+    setEmitidaEn(new Date())
     setOrdenEmitida(true)
   }
 
@@ -632,6 +697,18 @@ export default function App() {
                     : `Orden #${NUMERO_ORDEN_DEMO} emitida: el buque se desvía al sur para completar la carga en ${opcionElegida.nombre}.`}
                 </span>
               </div>
+            )}
+
+            {ordenEmitida && opcionElegida.id !== 'no-desviar' && emitidaEn && (
+              <OrdenDesvio
+                numero={NUMERO_ORDEN_DEMO}
+                emitidaEn={emitidaEn}
+                buque={data.buque}
+                opcion={opcionElegida}
+                tnParcial={peorDia.tonelaje_recomendado_tn}
+                tnCompletar={tnTopOff}
+                dia={peorDia}
+              />
             )}
 
             <div className={`${CARD} p-5`}>
