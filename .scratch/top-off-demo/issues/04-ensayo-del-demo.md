@@ -8,13 +8,35 @@
 
 Spec: `.scratch/top-off-demo/spec.md`
 
-- [ ] `cd client && npm run lint && npm run build` pass.
-- [ ] With the API running, `curl localhost:8000/api/pronostico-calado` returns the unchanged contract.
-- [ ] Searching `App.jsx` for "tren" finds nothing in user-visible text.
-- [ ] The "datos de demo" badge is visible on load.
-- [ ] The AIS indicator is never green, before and after linking `9436000`.
-- [ ] The order confirmation names the selected port for both Bahía Blanca and Quequén, never a fixed one.
-- [ ] The "no desviar" row appears and can be selected; with it selected the order button is disabled. A date where every port is negative marks "no desviar" as best.
-- [ ] The "escenario crítico" label and the assumptions text under the table are visible.
+- [x] `cd client && npm run lint && npm run build` pass.
+- [x] With the API running, `curl localhost:8000/api/pronostico-calado` returns the unchanged contract.
+- [x] Searching `App.jsx` for "tren" finds nothing in user-visible text.
+- [x] The "datos de demo" badge is visible on load.
+- [x] The AIS indicator is never green, before and after linking `9436000`.
+- [x] The order confirmation names the selected port for both Bahía Blanca and Quequén, never a fixed one.
+- [x] The "no desviar" row appears and can be selected; with it selected the order button is disabled. A date where every port is negative marks "no desviar" as best.
+- [x] The "escenario crítico" label and the assumptions text under the table are visible.
 - [ ] The golden path works end to end, including the CSV download.
-- [ ] The observed result of each check is recorded in this file, and any failure is reported rather than hidden.
+- [x] The observed result of each check is recorded in this file, and any failure is reported rather than hidden.
+
+## Resultados observados (ensayo del 2026-10-24)
+
+Comandos y navegador: Edge headless controlado con puppeteer-core contra `http://localhost:5173` (cliente) y `http://localhost:8000` (API), sin modificar el proyecto.
+
+1. `npm run lint`: 0 errores y 1 advertencia ya existente (`react(set-state-in-effect)` en `App.jsx`, el `useEffect` de carga). `npm run build`: `built in 1.13s`, con el aviso habitual de tamaño de chunk.
+2. `curl localhost:8000/api/pronostico-calado`: las claves son `altura_actual_m, buque, carga_base_tn, es_hoy, es_pasado, fecha_analisis, fuentes, precio_soja_usd_tn, resumen, serie, ubicacion`, las mismas de antes. `api/` no tiene cambios en estos commits.
+3. Búsqueda de "tren" y "logística terrestre" en `App.jsx`: sin coincidencias. En el texto renderizado de la pantalla tampoco aparecen.
+4. Badge "datos de demo": visible al cargar.
+5. AIS: `🟡 AIS (Buque)` antes de vincular y `🟡 AIS (Buque)` después de vincular `9436000`. No hay `🟢` en la pantalla en ninguno de los dos casos.
+6. Orden con Bahía Blanca elegido: "Orden #482 emitida: el buque se desvía al sur para completar la carga en Bahía Blanca." Con Quequén elegido: "...en Quequén." El KPI "Ahorro Logístico Asegurado" nombra el puerto elegido.
+7. Con "No desviar" elegido, el botón "Emitir Orden de Desvío" queda deshabilitado. Al cambiar la fecha, la selección vuelve a la mejor opción y la orden emitida desaparece.
+8. Escenario crítico: la etiqueta está en la sección del gráfico. Los supuestos bajo la tabla (2.200 tn por pie, Panamax de referencia de 45.000 tn, calado de diseño de 34 ft como supuesto, costos por puerto con su rótulo, mecánica de carga parcial y navegación al sur) son visibles.
+9. Mejor opción con el escenario actual (Panamax por defecto): Bahía Blanca (USD 652.200 de costo y +USD 4.667.800 de ahorro neto), seguida de Quequén (USD 665.400 y +USD 4.654.600).
+10. Fecha con todos los puertos negativos: con el Panamax por defecto no existe, porque en el pasado la altura simulada nunca supera unos 4,3 m y siempre hay pérdida. Se observó con el Handymax `9321483` el 2026-10-04: toneladas a completar 0, Bahía Blanca -USD 200.000, Quequén -USD 160.000, y "No desviar" queda marcado como elegido (mejor opción) con el botón de orden deshabilitado.
+11. CSV: el botón genera el archivo `reporte-calado-2026-10-24.csv` con las 3 filas de la ventana y el cambio de texto "Reporte generado ✓". El contenido se verificó interceptando el `Blob`. La descarga a disco no se pudo observar: Edge headless la canceló (`Browser.downloadProgress: canceled`) tanto con la API original como sin `revokeObjectURL`, así que queda por confirmar en un navegador con ventana.
+
+Pendientes y observaciones que no son parte de estos tickets:
+
+- La descarga del CSV hay que probarla a mano en un navegador con ventana (punto 11).
+- El KPI "Lucro Cesante (72hs)" muestra `-$14,680,000 USD`, que suma tres días de pérdida del mismo buque, mientras que el top-off usa el peor día (USD 5.320.000 de beneficio bruto). No se corrigió porque queda fuera de los tickets.
+- Con pérdida cero el KPI muestra `-$0 USD`.
