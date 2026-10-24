@@ -10,6 +10,7 @@ Cuando el Paraná baja, el calado máximo seguro de los buques se reduce y no pu
 
 ## Funcionalidad
 
+- Pantalla inicial que pide el IMO del buque; hasta entonces no se muestra ningún dato.
 - Altura del río en Rosario: 4 días de histórico y 3 de proyección.
 - Calado máximo seguro (en pies) y tonelaje recomendado para cada día.
 - Pérdida de capacidad y lucro cesante a 72 hs. Como un buque se carga una sola vez, el lucro cesante es el del peor día de la ventana, no la suma de los tres.
@@ -67,7 +68,7 @@ Incluido en la demo:
 
 Fuera de alcance: scraping real, modelos de ML o LLM, AIS en vivo, vista para la agencia marítima y tests.
 
-El flujo principal es: hoy, gráfico, lucro cesante, comparación de puertos, exportar CSV. El buque por defecto es el Panamax y la demo no requiere vincular un IMO.
+El flujo principal es: ingresar el IMO, hoy, gráfico, lucro cesante, comparación de puertos, exportar CSV. La interfaz no muestra datos ni cifras hasta que se ingresa un IMO; la demo usa `9436000` (Panamax).
 
 Las reglas de trabajo y el detalle del alcance están en [AGENTS.md](AGENTS.md), que es la fuente de verdad ante cualquier diferencia con este documento.
 
@@ -103,7 +104,7 @@ La base de buques es simulada: los nombres y datos son ficticios. En el campo "B
 | `9321483` | Pampa Star | Handymax | 32.000 tn | 30 ft | 3.200 tn, lucro cesante de USD 1.280.000 |
 | `9512277` | Gran Chaco | Supramax | 55.000 tn | 36 ft | 21.600 tn, lucro cesante de USD 8.640.000 |
 
-- El Panamax es el buque por defecto de la demo: sin vincular ningún IMO se usa Agro Pioneer.
+- La interfaz arranca pidiendo el IMO y no muestra datos hasta recibirlo. La demo usa `9436000` (Agro Pioneer, Panamax). La API, si se la consulta sin `imo`, usa ese mismo Panamax.
 - Para ver el caso en que todos los puertos dan ahorro neto negativo y "No desviar" es la mejor opción, vincular `9321483` y elegir la fecha 2026-10-04.
 - Un IMO que no está en la tabla devuelve `404` con el mensaje "IMO ... no encontrado".
 

@@ -1,6 +1,6 @@
 Status: ready-for-agent
 
-Amended 2026-10-24 by the owner: the badge reads "datos simulados", the assumptions text under the top-off table was removed from the UI, and the system is called Paranax. See `.scratch/ui-improvements/spec.md`.
+Amended 2026-10-24 by the owner: the badge reads "datos simulados", the assumptions text under the top-off table was removed from the UI, and the system is called Paranax, and the UI asks for the IMO first and shows no data until one is linked (stories 20 and the "Panamax por defecto" line no longer apply; the demo uses IMO `9436000`). See `.scratch/ui-improvements/spec.md`.
 
 # Spec: Top-off comparison and demo labelling
 

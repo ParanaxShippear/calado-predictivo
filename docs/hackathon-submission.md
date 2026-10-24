@@ -51,7 +51,7 @@ These were taken from search result summaries, not from the full reports. Open t
 | Time | Content |
 |---|---|
 | 0:00–0:45 | Business: problem, solution, who. Voice over simple images. |
-| 0:45–1:45 | Real demo, screen recording of the golden path: today, chart, lucro cesante, top-off comparison, export CSV. |
+| 0:45–1:45 | Real demo, screen recording of the golden path: enter IMO 9436000, today, chart, lucro cesante, top-off comparison, export CSV. |
 | 1:45–2:00 | Closing clip generated with the `brag` skill (`/brag`, 15–25 s by design), tone `polished` or `app-store`. |
 
 Guardrails for the recording:

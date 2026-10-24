@@ -12,5 +12,5 @@ Spec: `.scratch/top-off-demo/spec.md`
 - [ ] The AIS indicator is never green: checked before linking an IMO and after linking `9436000`.
 - [ ] The INA and BCR indicators keep showing the state the API reports (yellow `simulado` on fallback); no live claim is added.
 - [ ] The "escenario crítico" label is visible on the chart section.
-- [ ] The default vessel is still the Panamax and the demo never requires linking an IMO.
+- [ ] (Amended 2026-10-24: the UI now asks for the IMO first and shows no data until one is linked; the demo uses `9436000`.) The default vessel is still the Panamax and the demo never requires linking an IMO.
 - [ ] `npm run lint` and `npm run build` pass, and the CSV export still works.
