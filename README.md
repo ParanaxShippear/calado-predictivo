@@ -12,7 +12,7 @@ Cuando el Paraná baja, el calado máximo seguro de los buques se reduce y no pu
 
 - Altura del río en Rosario: 4 días de histórico y 3 de proyección.
 - Calado máximo seguro (en pies) y tonelaje recomendado para cada día.
-- Pérdida de capacidad y lucro cesante a 72 hs.
+- Pérdida de capacidad y lucro cesante a 72 hs. Como un buque se carga una sola vez, el lucro cesante es el del peor día de la ventana, no la suma de los tres.
 - Arbitraje de fechas: mejor y peor día de la ventana, y cuánto se ahorra adelantando el zarpe.
 - Comparación de puertos de top-off contra la opción de no desviar.
 - Calendario de análisis: una fecha pasada muestra el escenario histórico y hoy muestra la proyección.
@@ -130,10 +130,6 @@ La primera consulta de cada 5 minutos puede demorar unos segundos mientras vence
 
 ## Estado actual
 
-El alcance descripto arriba está definido pero el frontend todavía no lo implementa por completo. La especificación y los cuatro tickets están en `.scratch/top-off-demo/`. Pendiente:
+El alcance descripto arriba está implementado en el frontend. La especificación y los tickets están en `.scratch/top-off-demo/`, y el ensayo del flujo completo, con los resultados observados, en `.scratch/top-off-demo/issues/04-ensayo-del-demo.md`.
 
-- Reemplazar el botón único de Bahía Blanca por la comparación de puertos con la fila "no desviar", y quitar el texto "por tren" de la interfaz (tickets 02 y 03).
-- Agregar el aviso de "datos de demo", la etiqueta "escenario crítico" y corregir el indicador AIS (ticket 01).
-- Ensayar el flujo completo de la demo (ticket 04).
-- Corregir el cálculo del lucro cesante a 72 hs, que hoy suma la pérdida de tres días de un mismo buque.
-- Manejar el caso de ahorro neto negativo, que hoy se muestra como "+$-450,000".
+Pendiente: confirmar a mano, en un navegador con ventana, que la exportación del CSV descarga el archivo. El contenido se verificó, pero la descarga a disco no se pudo observar en el ensayo automatizado.
