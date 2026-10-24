@@ -31,11 +31,21 @@ import {
 } from 'lucide-react'
 
 const API_BASE = 'http://localhost:8000/api'
-const COSTO_DESVIO_USD = 450_000 // costo logístico extra de completar en Bahía Blanca
+
+// DEMO: costos del top-off. El buque carga parcial en Gran Rosario y navega al sur a completar.
+// Costo = días extra × costo diario del buque + premio del grano × toneladas completadas.
+const COSTO_DIARIO_BUQUE_USD = 40_000 // DEMO
+const PUERTOS_TOP_OFF = [
+  // Premio de Bahía Blanca: referencia (dentro del diferencial del maíz de Sio Granos sobre Gran Rosario,
+  // ~USD 32 a 40/tn en 2021-2022). Los 5 días extra y todos los valores de Quequén son DEMO.
+  { id: 'bahia-blanca', nombre: 'Bahía Blanca', diasExtra: 5, premioUsdTn: 34, premioEsReferencia: true },
+  { id: 'quequen', nombre: 'Quequén', diasExtra: 4, premioUsdTn: 38, premioEsReferencia: false },
+]
 
 const fmtTn = (n) => `${n.toLocaleString('es-AR')} tn`
 const fmtUsd = (n) => `$${n.toLocaleString('en-US')}`
 const fmtUsdPerdida = (n) => `-$${Math.abs(n).toLocaleString('en-US')} USD`
+const fmtUsdConSigno = (n) => `${n < 0 ? '-' : '+'}${fmtUsd(Math.abs(n))}`
 const fmtFecha = (iso) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-AR', {
     weekday: 'short',
@@ -248,7 +258,20 @@ export default function App() {
   const mejorDia = ventana.reduce((a, b) => (b.impacto_usd < a.impacto_usd ? b : a))
   const peorDia = ventana.reduce((a, b) => (b.impacto_usd > a.impacto_usd ? b : a))
   const ahorroArbitraje = peorDia.impacto_usd - mejorDia.impacto_usd
-  const ahorroNetoDesvio = peorDia.impacto_usd - COSTO_DESVIO_USD
+
+  // Top-off: reusa el peor día de la ventana (tonelaje no cargado e impacto). "No desviar" es el piso (0).
+  const tnTopOff = peorDia.tonelaje_no_cargado_tn
+  const opcionesTopOff = [
+    ...PUERTOS_TOP_OFF.map((p) => {
+      const costoDias = p.diasExtra * COSTO_DIARIO_BUQUE_USD
+      const costoPremio = p.premioUsdTn * tnTopOff
+      const costo = costoDias + costoPremio
+      return { ...p, costoDias, costoPremio, costo, ahorroNeto: peorDia.impacto_usd - costo }
+    }),
+    { id: 'no-desviar', nombre: 'No desviar', costo: 0, ahorroNeto: 0 },
+  ]
+  const opcionMejor = opcionesTopOff.reduce((a, b) => (b.ahorroNeto > a.ahorroNeto ? b : a))
+  const ahorroNetoDesvio = opcionMejor.ahorroNeto
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
@@ -369,7 +392,7 @@ export default function App() {
               icon={ShieldCheck}
               label="Ahorro Logístico Asegurado"
               value={`+${fmtUsd(ahorroNetoDesvio)} USD`}
-              sub="Neto tras el costo del top-off en Bahía Blanca"
+              sub={`Neto tras el costo del top-off en ${opcionMejor.nombre}`}
               tone="text-emerald-600"
             />
           ) : (
@@ -512,21 +535,65 @@ export default function App() {
 
             <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-700">
-                <Route className="h-4 w-4" /> Simulador Top-off (Bahía Blanca)
+                <Route className="h-4 w-4" /> Simulador Top-off
               </div>
-              <p className="mt-2 text-lg font-bold text-slate-800">
-                Completar {fmtTn(peorDia.tonelaje_no_cargado_tn)} por tren
+              <p className="mt-2 text-sm font-semibold text-slate-800">
+                El buque carga parcialmente en el Gran Rosario y navega al sur para completar{' '}
+                {fmtTn(tnTopOff)} en el puerto elegido.
               </p>
-              <dl className="mt-3 space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-slate-500">Costo extra</dt>
-                  <dd className="font-semibold text-red-600">-{fmtUsd(COSTO_DESVIO_USD)}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-slate-500">Ahorro neto</dt>
-                  <dd className="font-bold text-emerald-600">+{fmtUsd(ahorroNetoDesvio)}</dd>
-                </div>
-              </dl>
+              <table className="mt-3 w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-wider text-slate-500">
+                  <tr className="border-b border-blue-200">
+                    <th className="py-1.5 pr-2">Opción</th>
+                    <th className="py-1.5 pr-2 text-right">Costo</th>
+                    <th className="py-1.5 text-right">Ahorro neto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {opcionesTopOff.map((o) => {
+                    const esMejor = o.id === opcionMejor.id
+                    return (
+                      <tr key={o.id} className={`border-b border-blue-100 ${esMejor ? 'bg-emerald-50' : ''}`}>
+                        <td className="py-2 pr-2 align-top">
+                          <div className="font-semibold text-slate-800">{o.nombre}</div>
+                          {esMejor && (
+                            <span className="text-xs font-semibold text-emerald-700">Mejor opción</span>
+                          )}
+                          {o.costo > 0 && (
+                            <div className="text-xs text-slate-500">
+                              Días extra {fmtUsd(o.costoDias)} · Premio del grano {fmtUsd(o.costoPremio)}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-2 pr-2 text-right align-top font-semibold text-red-600">
+                          {o.costo > 0 ? `-${fmtUsd(o.costo)}` : fmtUsd(0)}
+                        </td>
+                        <td
+                          className={`py-2 text-right align-top font-bold ${o.ahorroNeto < 0 ? 'text-red-600' : 'text-emerald-600'}`}
+                        >
+                          {fmtUsdConSigno(o.ahorroNeto)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-slate-500">
+                <li>Costo = días extra de buque (USD {COSTO_DIARIO_BUQUE_USD.toLocaleString('en-US')} por día, demo) + premio del grano por tonelada completada.</li>
+                {PUERTOS_TOP_OFF.map((p) => (
+                  <li key={p.id}>
+                    {p.nombre}: {p.diasExtra} días extra (demo) y USD {p.premioUsdTn}/tn de premio del grano (
+                    {p.premioEsReferencia
+                      ? 'referencia: dentro del diferencial del maíz que observó Sio Granos sobre Gran Rosario, unos USD 32 a 40/tn en 2021 y 2022'
+                      : 'demo'}
+                    ).
+                  </li>
+                ))}
+                <li>Toneladas a completar y beneficio: las del peor día de la ventana de 72 hs.</li>
+                <li>Modelo: 2.200 tn perdidas por pie de calado faltante.</li>
+                <li>Panamax de referencia, 45.000 tn (supuesto del modelo; la BCR cita Panamax de 60.000 a 65.000 tn).</li>
+                <li>Calado de diseño del Panamax (supuesto): 34 ft; pies faltantes = 34 − calado seguro.</li>
+              </ul>
               <button
                 onClick={emitirDesvio}
                 disabled={ordenEmitida}
