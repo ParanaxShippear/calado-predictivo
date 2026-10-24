@@ -16,6 +16,7 @@ Cuando el Paraná baja, el calado máximo seguro de los buques se reduce y no pu
 - Pérdida de capacidad y lucro cesante a 72 hs. Como un buque se carga una sola vez, el lucro cesante es el del peor día de la ventana, no la suma de los tres.
 - Arbitraje de fechas: mejor y peor día de la ventana, y cuánto se ahorra adelantando el zarpe.
 - Comparación de puertos de top-off contra la opción de no desviar.
+- Orden de desvío: al emitirla se muestra el documento que recibiría la agencia marítima.
 - Calendario de análisis: una fecha pasada muestra el escenario histórico y hoy muestra la proyección.
 - Exportación de un reporte en CSV.
 
@@ -45,7 +46,7 @@ El costo del top-off tiene dos componentes: los días extra de buque (días por 
 | Costos del top-off | Constantes en el frontend | Demo. La excepción es el premio del grano en Bahía Blanca (USD 34/tn), que se rotula "referencia": está dentro del diferencial de precio del maíz que observó Sio Granos sobre Gran Rosario (unos USD 32 a 40/tn en 2021 y 2022). Los días extra y todos los valores de Quequén son demo. |
 | Número de orden de desvío | Constante en el frontend | Demo |
 
-La orden de desvío es solo visual: no se envía a ningún sistema.
+La orden de desvío se muestra como un documento de ejemplo dirigido a la agencia marítima (número de orden, buque, instrucción, costo y ahorro estimados), solo en pantalla: no se envía ni se guarda en ningún sistema.
 
 Supuestos del modelo (no se muestran en la interfaz; se documentan acá y en `AGENTS.md`):
 

@@ -61,3 +61,11 @@ Guardrails for the recording:
 - Record with the backend already running, to avoid the scraping timeout on camera.
 
 The `brag` skill is installed in `.agents/skills/brag`. It runs `npx hyperframes ...`, which downloads and executes a third-party package. Its `SKILL.md`, references and script were reviewed on 2026-10-24; the Hyperframes package itself was not.
+
+## How to explain the order of diversion in the pitch
+
+What the product shows: pressing "Emitir Orden de Desvío" generates the document the exporter would send to the shipping agency: the vessel, the partial load to leave Rosario with, how much to complete and at which port, the reason (the projected safe draft) and the estimated cost and saving. In the demo it is shown on screen only; nothing is sent or stored, and the document says it was generated with simulated data.
+
+How to say it: "la orden queda lista para la agencia marítima" or "así sería la orden que recibe la agencia". Do not say it was sent.
+
+Caveat: that the agency is the recipient and what the real instruction looks like is the team's reading of the business, not verified with an exporter (the research notes list how exporters decide and with which tools as an evidence gap). Validate it in an interview before presenting it as how the industry works.
