@@ -44,3 +44,4 @@ Dark mode and a token system, new features, any change to the API, the model or 
 - The first screen asks for the IMO ("Ingresá el IMO de tu buque") and shows no data or numbers, only the "datos simulados" badge. Nothing is requested from the API until a valid IMO is linked. Errors read: 7 digits expected, IMO not found, service unreachable. Unlinking the vessel returns to that screen. The demo uses IMO `9436000`.
 - The title reads "Paranax - Calado predictivo y unificado" (header and page title).
 - The caption about the cropped vertical scale under the chart is removed.
+- The sentence "El buque carga parcialmente en el Gran Rosario y navega al sur para completar X tn en el puerto elegido" is removed from the top-off panel (it was the on-screen statement of the mechanic, story 14 of the top-off spec). The mechanic stays documented in `AGENTS.md` and the README, and the rule of never implying a train still applies.

@@ -650,11 +650,7 @@ export default function App() {
                   {opcionMejor.id === 'no-desviar' ? 'Ningún puerto compensa su costo' : 'de ahorro neto'}
                 </div>
               </div>
-              <p className="mt-3 text-sm text-slate-700">
-                El buque carga parcialmente en el Gran Rosario y navega al sur para completar {fmtTn(tnTopOff)} en
-                el puerto elegido.
-              </p>
-              <table className="mt-2 w-full text-left text-sm">
+              <table className="mt-4 w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-wider text-slate-600">
                   <tr className="border-b border-blue-200">
                     <th scope="col" className="py-1.5 pr-2">Opción</th>
