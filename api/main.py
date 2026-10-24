@@ -233,6 +233,7 @@ def pronostico_calado(fecha: date | None = None, imo: str | None = None):
         "resumen": {
             "tendencia_72hs_m": round(ventana[-1]["altura_rio_m"] - actual["altura_rio_m"], 2),
             "perdida_capacidad_tn": buque["carga_optima_tn"] - ventana[-1]["tonelaje_recomendado_tn"],
-            "lucro_cesante_72hs_usd": sum(p["impacto_usd"] for p in ventana),
+            # Un buque se carga una sola vez: el lucro cesante es el del peor día de la ventana, no la suma.
+            "lucro_cesante_72hs_usd": max(p["impacto_usd"] for p in ventana),
         },
     }
