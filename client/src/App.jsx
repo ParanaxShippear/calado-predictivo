@@ -35,6 +35,7 @@ const API_BASE = 'http://localhost:8000/api'
 // DEMO: costos del top-off. El buque carga parcial en Gran Rosario y navega al sur a completar.
 // Costo = días extra × costo diario del buque + premio del grano × toneladas completadas.
 const COSTO_DIARIO_BUQUE_USD = 40_000 // DEMO
+const NUMERO_ORDEN_DEMO = 482 // DEMO
 const PUERTOS_TOP_OFF = [
   // Premio de Bahía Blanca: referencia (dentro del diferencial del maíz de Sio Granos sobre Gran Rosario,
   // ~USD 32 a 40/tn en 2021-2022). Los 5 días extra y todos los valores de Quequén son DEMO.
@@ -114,6 +115,8 @@ export default function App() {
   const [cargando, setCargando] = useState(false)
   const [exportado, setExportado] = useState(false)
   const [ordenEmitida, setOrdenEmitida] = useState(false)
+  // null = se usa la mejor opción; vuelve a null al cambiar la fecha o el buque.
+  const [seleccionId, setSeleccionId] = useState(null)
 
   const [imoInput, setImoInput] = useState('')
   const [buque, setBuque] = useState(null)
@@ -147,6 +150,7 @@ export default function App() {
     if (!nueva) return
     setFecha(nueva)
     setOrdenEmitida(false)
+    setSeleccionId(null)
   }
 
   async function vincularAis(e) {
@@ -161,6 +165,7 @@ export default function App() {
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setBuque(await r.json())
       setOrdenEmitida(false)
+      setSeleccionId(null)
     } catch (err) {
       setBuque(null)
       setBuqueError(err.message)
@@ -174,6 +179,7 @@ export default function App() {
     setImoInput('')
     setBuqueError(null)
     setOrdenEmitida(false)
+    setSeleccionId(null)
   }
 
   const fechaAnalisis = data?.fecha_analisis
@@ -271,7 +277,8 @@ export default function App() {
     { id: 'no-desviar', nombre: 'No desviar', costo: 0, ahorroNeto: 0 },
   ]
   const opcionMejor = opcionesTopOff.reduce((a, b) => (b.ahorroNeto > a.ahorroNeto ? b : a))
-  const ahorroNetoDesvio = opcionMejor.ahorroNeto
+  const opcionElegida = opcionesTopOff.find((o) => o.id === seleccionId) ?? opcionMejor
+  const ahorroNetoDesvio = opcionElegida.ahorroNeto
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
@@ -391,8 +398,8 @@ export default function App() {
             <KpiCard
               icon={ShieldCheck}
               label="Ahorro Logístico Asegurado"
-              value={`+${fmtUsd(ahorroNetoDesvio)} USD`}
-              sub={`Neto tras el costo del top-off en ${opcionMejor.nombre}`}
+              value={`${fmtUsdConSigno(ahorroNetoDesvio)} USD`}
+              sub={`Neto tras el costo del top-off en ${opcionElegida.nombre}`}
               tone="text-emerald-600"
             />
           ) : (
@@ -517,7 +524,8 @@ export default function App() {
                 role="status"
                 className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 shadow-sm"
               >
-                ✅ Orden #482 enviada a Terminal Bahía Blanca. Logística terrestre reservada.
+                ✅ Orden #{NUMERO_ORDEN_DEMO} emitida: el buque se desvía al sur para completar la carga en{' '}
+                {opcionElegida.nombre}.
               </div>
             )}
 
@@ -552,10 +560,24 @@ export default function App() {
                 <tbody>
                   {opcionesTopOff.map((o) => {
                     const esMejor = o.id === opcionMejor.id
+                    const esElegida = o.id === opcionElegida.id
                     return (
-                      <tr key={o.id} className={`border-b border-blue-100 ${esMejor ? 'bg-emerald-50' : ''}`}>
+                      <tr
+                        key={o.id}
+                        onClick={() => !ordenEmitida && setSeleccionId(o.id)}
+                        className={`border-b border-blue-100 ${ordenEmitida ? '' : 'cursor-pointer'} ${esElegida ? 'bg-blue-100' : ''}`}
+                      >
                         <td className="py-2 pr-2 align-top">
-                          <div className="font-semibold text-slate-800">{o.nombre}</div>
+                          <label className="flex items-center gap-2 font-semibold text-slate-800">
+                            <input
+                              type="radio"
+                              name="top-off"
+                              checked={esElegida}
+                              disabled={ordenEmitida}
+                              onChange={() => setSeleccionId(o.id)}
+                            />
+                            {o.nombre}
+                          </label>
                           {esMejor && (
                             <span className="text-xs font-semibold text-emerald-700">Mejor opción</span>
                           )}
@@ -596,7 +618,7 @@ export default function App() {
               </ul>
               <button
                 onClick={emitirDesvio}
-                disabled={ordenEmitida}
+                disabled={ordenEmitida || opcionElegida.id === 'no-desviar'}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
               >
                 {ordenEmitida ? (
