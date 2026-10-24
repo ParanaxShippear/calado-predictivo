@@ -24,7 +24,7 @@ Demo data is allowed. Unlabeled demo data is not.
 - AIS is always simulated (hardcoded `BUQUES`): never show it as live.
 - Demo values today (inline, keep them as named constants marked `DEMO`): previous days and projection (`altura_para`, `DELTAS_PROYECCION_M`), `BUQUES`, top-off port costs (extra vessel days + grain premium at the completion port), the order number.
 - Real sources attempted: river height (INA) and soy price (BCR) via scraping. Selectors are placeholders; on failure use the fallback and the `simulado` state (yellow indicator).
-- Model assumptions: 2,200 tn per foot of draft, 45,000 tn base load, 6.0 m channel depth offset (`OFFSET_CANAL_M`), 0.6 m under-keel clearance (`UKC_M`). Safe draft = (river height + 6.0 - 0.6) m converted to feet. Changing one means updating it here (single source).
+- Model assumptions: 2,200 tn per foot of draft, 45,000 tn base load (model assumption, not verified: BCR cites Panamax of 60,000-65,000 tn), 34 ft Panamax design draft needed for the full load (`calado_diseno_pies`; model assumption, not verified; unrelated to Buenos Aires' 34 ft and to the 34 ft guaranteed channel draft cited by BCR), 6.0 m channel depth offset (`OFFSET_CANAL_M`), 0.6 m under-keel clearance (`UKC_M`). Safe draft = (river height + 6.0 - 0.6) m converted to feet. Changing one means updating it here (single source).
 
 ## Top-off mechanic
 The vessel loads partially at Gran Rosario and sails south to complete its cargo at the port. Never state or imply that the cargo travels by train from Rosario: no source supports it.
@@ -40,7 +40,7 @@ The vessel loads partially at Gran Rosario and sails south to complete its cargo
 - Never read or write `.env`, keys or credentials. Every external call gets a timeout and a fallback.
 
 ## Hackathon constraints
-- Scope is closed. IN: the existing dashboard, a "datos de demo" badge, an AIS indicator that never shows green, a top-off port comparison (Bahía Blanca, Quequén) with demo costs, a "no desviar" row, visible assumptions, a "escenario crítico" label, rehearsal. OUT: real scraping, ML/LLM, live AIS, agencia view, tests, README roadmap. If a request is not IN, say no.
+- Scope is closed. IN: the existing dashboard, a "datos de demo" badge, an AIS indicator that never shows green, a top-off port comparison (Bahía Blanca, Quequén) with demo costs, a "no desviar" row, visible assumptions, a "escenario crítico" label, rehearsal. UI improvements approved by the owner on 2026-10-24 (accessibility, es-AR number formats, decision hierarchy; see `.scratch/ui-improvements/spec.md`). OUT: real scraping, ML/LLM, live AIS, agencia view, tests, README roadmap. If a request is not IN, say no.
 - Top-off implementation: frontend constants only (2 ports, demo costs, 2 cost components). No new endpoint, no API table, no extra cost components.
 - Primary persona: the agroexportadora. Golden path: today -> chart -> lucro cesante -> top-off port comparison -> export CSV. Must work on every commit.
 - Default vessel is the Panamax. Nobody links an IMO in the demo.

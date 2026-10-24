@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   DollarSign,
   Download,
+  Lightbulb,
   Radar,
   Route,
   Ruler,
@@ -31,11 +32,25 @@ import {
 } from 'lucide-react'
 
 const API_BASE = 'http://localhost:8000/api'
-const COSTO_DESVIO_USD = 450_000 // costo logístico extra de completar en Bahía Blanca
+
+// DEMO: costos del top-off. El buque carga parcial en Gran Rosario y navega al sur a completar.
+// Costo = días extra × costo diario del buque + premio del grano × toneladas completadas.
+const COSTO_DIARIO_BUQUE_USD = 40_000 // DEMO
+const NUMERO_ORDEN_DEMO = 482 // DEMO
+const PUERTOS_TOP_OFF = [
+  // Premio de Bahía Blanca: referencia (dentro del diferencial del maíz de Sio Granos sobre Gran Rosario,
+  // ~USD 32 a 40/tn en 2021-2022). Los 5 días extra y todos los valores de Quequén son DEMO.
+  { id: 'bahia-blanca', nombre: 'Bahía Blanca', diasExtra: 5, premioUsdTn: 34, premioEsReferencia: true },
+  { id: 'quequen', nombre: 'Quequén', diasExtra: 4, premioUsdTn: 38, premioEsReferencia: false },
+]
 
 const fmtTn = (n) => `${n.toLocaleString('es-AR')} tn`
-const fmtUsd = (n) => `$${n.toLocaleString('en-US')}`
-const fmtUsdPerdida = (n) => `-$${Math.abs(n).toLocaleString('en-US')} USD`
+const fmtUsd = (n) => `USD ${n.toLocaleString('es-AR')}`
+const fmtUsdPerdida = (n) => `${n === 0 ? '' : '-'}${fmtUsd(Math.abs(n))}`
+const fmtDec = (n, d) => n.toLocaleString('es-AR', { minimumFractionDigits: d, maximumFractionDigits: d })
+const fmtM = (n) => `${fmtDec(n, 2)} m`
+const fmtFt = (n) => `${fmtDec(n, 2)} ft`
+const fmtUsdConSigno = (n) => `${n < 0 ? '-' : '+'}${fmtUsd(Math.abs(n))}`
 const fmtFecha = (iso) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-AR', {
     weekday: 'short',
@@ -54,32 +69,42 @@ const hoyISO = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+// Colores del gráfico, definidos una sola vez.
+const COLOR_GRAFICO = {
+  historico: '#2563eb',
+  proyeccion: '#dc2626',
+  grilla: '#e2e8f0',
+  eje: '#334155',
+  referencia: '#94a3b8',
+  etiqueta: '#475569',
+}
+
 const CARD = 'rounded-xl border border-slate-200 bg-white shadow-sm'
 
 function KpiCard({ icon: Icon, label, value, sub, tone = 'text-blue-600' }) {
   return (
     <div className={`${CARD} p-5`}>
-      <div className="flex items-center justify-between text-slate-500">
+      <div className="flex items-center justify-between text-slate-600">
         <span className="text-xs font-medium uppercase tracking-wider">{label}</span>
         <Icon className={`h-5 w-5 ${tone}`} />
       </div>
       <div className={`mt-3 text-3xl font-bold ${tone}`}>{value}</div>
-      <div className="mt-1 text-sm text-slate-500">{sub}</div>
+      <div className="mt-1 text-sm text-slate-600">{sub}</div>
     </div>
   )
 }
 
-// Refleja el estado real de cada fuente: en vivo, fallback (valor por defecto) o sin vincular.
+// Refleja el estado real de cada fuente: en vivo, fallback (valor por defecto) o dato de demo.
 function Fuente({ nombre, estado }) {
-  const info = {
-    en_vivo: ['🟢', 'Datos en vivo'],
-    simulado: ['🟡', 'Sin respuesta de la fuente: usando valor por defecto'],
-    sin_vincular: ['⚪', 'Sin vincular'],
+  const [punto, texto] = {
+    en_vivo: ['bg-emerald-600', 'en vivo'],
+    simulado: ['bg-amber-500', 'valor por defecto'],
+    demo: ['bg-amber-500', 'demo'],
   }[estado]
   return (
-    <span title={info[1]} className="inline-flex items-center gap-1.5">
-      <span>{info[0]}</span>
-      {nombre}
+    <span className="inline-flex items-center gap-1.5">
+      <span aria-hidden="true" className={`h-2 w-2 rounded-full ${punto}`} />
+      {nombre}: {texto}
     </span>
   )
 }
@@ -90,9 +115,9 @@ function ChartTooltip({ active, payload, label }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-800 shadow-md">
       <div className="mb-1 font-semibold">{fmtFecha(label)}</div>
-      <div>Altura: {p.altura_rio_m.toFixed(2)} m</div>
-      <div>Calado seguro: {p.calado_maximo_seguro_pies} ft</div>
-      <div className="text-slate-500">{p.tipo === 'prediccion' ? 'Proyección' : 'Histórico'}</div>
+      <div>Altura: {fmtM(p.altura_rio_m)}</div>
+      <div>Calado seguro: {fmtFt(p.calado_maximo_seguro_pies)}</div>
+      <div className="text-slate-600">{p.tipo === 'prediccion' ? 'Proyección' : 'Histórico'}</div>
     </div>
   )
 }
@@ -104,6 +129,8 @@ export default function App() {
   const [cargando, setCargando] = useState(false)
   const [exportado, setExportado] = useState(false)
   const [ordenEmitida, setOrdenEmitida] = useState(false)
+  // null = se usa la mejor opción; vuelve a null al cambiar la fecha o el buque.
+  const [seleccionId, setSeleccionId] = useState(null)
 
   const [imoInput, setImoInput] = useState('')
   const [buque, setBuque] = useState(null)
@@ -137,6 +164,7 @@ export default function App() {
     if (!nueva) return
     setFecha(nueva)
     setOrdenEmitida(false)
+    setSeleccionId(null)
   }
 
   async function vincularAis(e) {
@@ -151,6 +179,7 @@ export default function App() {
       if (!r.ok) throw new Error(`HTTP ${r.status}`)
       setBuque(await r.json())
       setOrdenEmitida(false)
+      setSeleccionId(null)
     } catch (err) {
       setBuque(null)
       setBuqueError(err.message)
@@ -164,6 +193,7 @@ export default function App() {
     setImoInput('')
     setBuqueError(null)
     setOrdenEmitida(false)
+    setSeleccionId(null)
   }
 
   const fechaAnalisis = data?.fecha_analisis
@@ -220,7 +250,7 @@ export default function App() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-800">
         <div className="max-w-md rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
-          <h1 className="text-lg font-semibold text-red-600">No se pudo conectar con la API</h1>
+          <h1 className="text-lg font-semibold text-red-700">No se pudo conectar con la API</h1>
           <p className="mt-2 text-sm text-slate-600">
             Verificá que el backend esté corriendo en <code>{API_BASE}</code> ({error}).
           </p>
@@ -231,7 +261,7 @@ export default function App() {
 
   if (!data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-600">
         Cargando pronóstico…
       </div>
     )
@@ -248,11 +278,25 @@ export default function App() {
   const mejorDia = ventana.reduce((a, b) => (b.impacto_usd < a.impacto_usd ? b : a))
   const peorDia = ventana.reduce((a, b) => (b.impacto_usd > a.impacto_usd ? b : a))
   const ahorroArbitraje = peorDia.impacto_usd - mejorDia.impacto_usd
-  const ahorroNetoDesvio = peorDia.impacto_usd - COSTO_DESVIO_USD
+
+  // Top-off: reusa el peor día de la ventana (tonelaje no cargado e impacto). "No desviar" es el piso (0).
+  const tnTopOff = peorDia.tonelaje_no_cargado_tn
+  const opcionesTopOff = [
+    ...PUERTOS_TOP_OFF.map((p) => {
+      const costoDias = p.diasExtra * COSTO_DIARIO_BUQUE_USD
+      const costoPremio = p.premioUsdTn * tnTopOff
+      const costo = costoDias + costoPremio
+      return { ...p, costoDias, costoPremio, costo, ahorroNeto: peorDia.impacto_usd - costo }
+    }),
+    { id: 'no-desviar', nombre: 'No desviar', costo: 0, ahorroNeto: 0 },
+  ]
+  const opcionMejor = opcionesTopOff.reduce((a, b) => (b.ahorroNeto > a.ahorroNeto ? b : a))
+  const opcionElegida = opcionesTopOff.find((o) => o.id === seleccionId) ?? opcionMejor
+  const ahorroNetoDesvio = opcionElegida.ahorroNeto
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
-      <div className="mx-auto max-w-7xl space-y-6 p-6">
+      <main className="mx-auto max-w-7xl space-y-6 p-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="rounded-lg bg-blue-600 p-2">
@@ -260,22 +304,28 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-800">Calado Predictivo · Command Center</h1>
-              <p className="text-sm text-slate-500">{data.ubicacion} — agroexportación</p>
+              <p className="text-sm text-slate-600">{data.ubicacion} - agroexportación</p>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
-            <Fuente nombre="INA (Río)" estado={data.fuentes.ina} />
-            <span className="text-slate-300">|</span>
-            <Fuente nombre="BCR (Soja)" estado={data.fuentes.bcr} />
-            <span className="text-slate-300">|</span>
-            <Fuente nombre="AIS (Buque)" estado={buque ? 'en_vivo' : 'sin_vincular'} />
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Siempre visible: los días previos, la proyección, el AIS y los costos son demo. */}
+            <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700">
+              Datos de demo
+            </span>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
+              <Fuente nombre="INA (Río)" estado={data.fuentes.ina} />
+              <span aria-hidden="true" className="text-slate-300">|</span>
+              <Fuente nombre="BCR (Soja)" estado={data.fuentes.bcr} />
+              <span aria-hidden="true" className="text-slate-300">|</span>
+              <Fuente nombre="AIS (Buque)" estado="demo" />
+            </div>
           </div>
         </header>
 
         {/* Barra de controles */}
         <section className={`${CARD} flex flex-wrap items-end gap-x-6 gap-y-4 p-4`}>
           <label className="flex flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-600">
               <CalendarDays className="h-4 w-4 text-blue-600" /> Fecha de análisis
             </span>
             <input
@@ -283,12 +333,12 @@ export default function App() {
               value={fecha}
               max={hoyISO()}
               onChange={(e) => cambiarFecha(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
             />
           </label>
 
           <form onSubmit={vincularAis} className="flex flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-500">
+            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-600">
               <Radar className="h-4 w-4 text-blue-600" /> Buscador de buque (AIS)
             </span>
             <div className="flex gap-2">
@@ -297,13 +347,14 @@ export default function App() {
                 inputMode="numeric"
                 value={imoInput}
                 onChange={(e) => setImoInput(e.target.value)}
+                aria-label="IMO del buque"
                 placeholder="Ingresar IMO, ej. 9436000"
-                className="w-64 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+                className="min-h-11 w-64 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-500 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
               />
               <button
                 type="submit"
                 disabled={vinculando || !imoInput.trim()}
-                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                className="min-h-11 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600"
               >
                 {vinculando ? 'Buscando…' : 'Vincular AIS'}
               </button>
@@ -317,7 +368,7 @@ export default function App() {
                 <div className="font-semibold text-slate-800">
                   {buque.nombre} - {buque.tipo}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-slate-600">
                   IMO {buque.imo} · Eslora {buque.eslora_m} m · {fmtTn(buque.carga_optima_tn)} · Calado diseño{' '}
                   {buque.calado_diseno_pies} ft
                 </div>
@@ -325,46 +376,50 @@ export default function App() {
               <button
                 type="button"
                 onClick={desvincularAis}
-                title="Desvincular buque"
-                className="rounded p-1 text-slate-400 transition hover:bg-blue-100 hover:text-slate-600"
+                                aria-label="Desvincular buque"
+                className="flex h-11 w-11 items-center justify-center rounded text-slate-600 transition hover:bg-blue-100 hover:text-slate-700"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
           )}
-          {buqueError && <span className="text-sm font-medium text-red-600">{buqueError}</span>}
-          {error && <span className="text-sm font-medium text-red-600">Error al actualizar ({error})</span>}
-          {cargando && <span className="text-sm text-slate-400">Actualizando…</span>}
+          {buqueError && <span className="text-sm font-medium text-red-700">{buqueError}</span>}
+          {error && <span className="text-sm font-medium text-red-700">Error al actualizar ({error})</span>}
+          {cargando && <span className="text-sm text-slate-500">Actualizando…</span>}
         </section>
 
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <KpiCard
             icon={Waves}
             label={data.es_hoy ? 'Altura Actual' : `Altura al ${fmtDiaCorto(fechaAnalisis)}`}
-            value={`${data.altura_actual_m.toFixed(2)} m`}
+            value={fmtM(data.altura_actual_m)}
             sub="Hidrómetro Rosario"
           />
           <KpiCard
             icon={TrendIcon}
             label="Tendencia a 72hs"
-            value={`${resumen.tendencia_72hs_m > 0 ? '+' : ''}${resumen.tendencia_72hs_m.toFixed(2)} m`}
+            value={`${resumen.tendencia_72hs_m > 0 ? '+' : ''}${fmtM(resumen.tendencia_72hs_m)}`}
             sub={baja ? 'Bajante en curso' : 'Río en crecida'}
-            tone={baja ? 'text-red-600' : 'text-emerald-600'}
+            tone={baja ? 'text-red-700' : 'text-emerald-700'}
           />
           <KpiCard
             icon={TrendingDown}
             label="Pérdida de Capacidad Estimada"
             value={fmtTn(Math.max(0, resumen.perdida_capacidad_tn))}
             sub={`${data.buque.nombre}: carga óptima de ${fmtTn(data.carga_base_tn)}`}
-            tone="text-red-600"
+            tone="text-red-700"
           />
           {ordenEmitida ? (
             <KpiCard
               icon={ShieldCheck}
               label="Ahorro Logístico Asegurado"
-              value={`+${fmtUsd(ahorroNetoDesvio)} USD`}
-              sub="Neto tras el costo del top-off en Bahía Blanca"
-              tone="text-emerald-600"
+              value={fmtUsdConSigno(ahorroNetoDesvio)}
+              sub={
+                opcionElegida.id === 'no-desviar'
+                  ? 'Sin desvío: no hay costo ni ahorro de top-off'
+                  : `Neto tras el costo del top-off en ${opcionElegida.nombre}`
+              }
+              tone="text-emerald-700"
             />
           ) : (
             <KpiCard
@@ -372,39 +427,42 @@ export default function App() {
               label="Lucro Cesante (72hs)"
               value={fmtUsdPerdida(resumen.lucro_cesante_72hs_usd)}
               sub={`Soja no cargada a USD ${data.precio_soja_usd_tn}/tn`}
-              tone="text-red-600"
+              tone="text-red-700"
             />
           )}
         </section>
 
         <div className="grid gap-6 lg:grid-cols-10">
-          {/* Columna izquierda (70%): gráfico + tabla */}
-          <div className="flex min-w-0 flex-col gap-6 lg:col-span-7">
+          {/* Columna izquierda: gráfico + tabla */}
+          <div className="order-2 flex min-w-0 flex-col gap-6 lg:order-1 lg:col-span-6">
             <section className={`${CARD} p-5`}>
-              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
-                <Anchor className="h-4 w-4 text-blue-600" /> Línea de flotación: histórico vs. proyección
+              <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
+                <Anchor className="h-4 w-4 text-blue-600" /> Altura del río: histórico vs. proyección
+                <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold normal-case tracking-normal text-red-700">
+                  Escenario crítico
+                </span>
               </h2>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
-                    <XAxis dataKey="fecha" tickFormatter={fmtFecha} stroke="#334155" fontSize={12} />
+                    <CartesianGrid stroke={COLOR_GRAFICO.grilla} strokeDasharray="3 3" />
+                    <XAxis dataKey="fecha" tickFormatter={fmtFecha} stroke={COLOR_GRAFICO.eje} fontSize={12} />
                     <YAxis
                       domain={[yMin, yMax]}
                       unit=" m"
-                      stroke="#334155"
+                      stroke={COLOR_GRAFICO.eje}
                       fontSize={12}
-                      tickFormatter={(v) => v.toFixed(1)}
+                      tickFormatter={(v) => fmtDec(v, 1)}
                     />
                     <Tooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <ReferenceLine
                       x={fechaAnalisis}
-                      stroke="#94a3b8"
+                      stroke={COLOR_GRAFICO.referencia}
                       strokeDasharray="4 4"
                       label={{
                         value: data.es_hoy ? 'Hoy' : 'Fecha de análisis',
-                        fill: '#475569',
+                        fill: COLOR_GRAFICO.etiqueta,
                         fontSize: 12,
                         position: 'top',
                       }}
@@ -412,7 +470,7 @@ export default function App() {
                     <Line
                       name="Histórico"
                       dataKey="historico"
-                      stroke="#2563eb"
+                      stroke={COLOR_GRAFICO.historico}
                       strokeWidth={3}
                       dot={{ r: 4 }}
                       connectNulls={false}
@@ -420,7 +478,7 @@ export default function App() {
                     <Line
                       name="Proyección"
                       dataKey="proyeccion"
-                      stroke="#dc2626"
+                      stroke={COLOR_GRAFICO.proyeccion}
                       strokeWidth={3}
                       strokeDasharray="8 5"
                       dot={{ r: 4 }}
@@ -429,11 +487,14 @@ export default function App() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              <p className="mt-2 text-xs text-slate-600">
+                Escala vertical recortada, de {fmtDec(yMin, 1)} a {fmtDec(yMax, 1)} m: la caída se ve más pronunciada de lo que es.
+              </p>
             </section>
 
             <section className={`${CARD} p-5`}>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
+                <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
                   <Ruler className="h-4 w-4 text-blue-600" />
                   {data.es_pasado
                     ? 'Recomendación de carga · 3 días siguientes'
@@ -441,7 +502,7 @@ export default function App() {
                 </h2>
                 <button
                   onClick={exportarReporte}
-                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
                 >
                   <Download className="h-4 w-4" />
                   {exportado ? 'Reporte generado ✓' : 'Exportar reporte a agencia marítima'}
@@ -449,23 +510,23 @@ export default function App() {
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm">
-                  <thead className="text-xs uppercase tracking-wider text-slate-500">
+                  <thead className="text-xs uppercase tracking-wider text-slate-600">
                     <tr className="border-b border-slate-200">
-                      <th className="py-2 pr-4">Fecha</th>
-                      <th className="py-2 pr-4">Altura del río</th>
-                      <th className="py-2 pr-4">Calado máx. seguro</th>
-                      <th className="py-2 pr-4">Tonelaje recomendado</th>
-                      <th className="py-2">Impacto económico</th>
+                      <th scope="col" className="py-2 pr-4">Fecha</th>
+                      <th scope="col" className="py-2 pr-4">Altura del río</th>
+                      <th scope="col" className="py-2 pr-4">Calado máx. seguro</th>
+                      <th scope="col" className="py-2 pr-4">Tonelaje recomendado</th>
+                      <th scope="col" className="py-2">Impacto económico</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ventana.map((p) => (
                       <tr key={p.fecha} className="border-b border-slate-100">
-                        <td className="py-3 pr-4 font-medium capitalize">{fmtFecha(p.fecha)}</td>
-                        <td className="py-3 pr-4">{p.altura_rio_m.toFixed(2)} m</td>
-                        <td className="py-3 pr-4">{p.calado_maximo_seguro_pies} ft</td>
+                        <td className="whitespace-nowrap py-3 pr-4 font-medium capitalize">{fmtFecha(p.fecha)}</td>
+                        <td className="py-3 pr-4">{fmtM(p.altura_rio_m)}</td>
+                        <td className="py-3 pr-4">{fmtFt(p.calado_maximo_seguro_pies)}</td>
                         <td className="py-3 pr-4 font-semibold">{fmtTn(p.tonelaje_recomendado_tn)}</td>
-                        <td className="py-3 font-semibold text-red-600">{fmtUsdPerdida(p.impacto_usd)}</td>
+                        <td className="py-3 font-semibold text-red-700">{fmtUsdPerdida(p.impacto_usd)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -474,58 +535,111 @@ export default function App() {
             </section>
           </div>
 
-          {/* Columna derecha (30%): Centro de Decisiones */}
-          <aside className="flex min-w-0 flex-col gap-4 lg:col-span-3">
-            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-500">
+          {/* Columna derecha: Centro de Decisiones (primero en pantallas angostas) */}
+          <aside className="order-1 flex min-w-0 flex-col gap-4 lg:order-2 lg:col-span-4">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
               <Target className="h-4 w-4 text-blue-600" /> Centro de Decisiones
             </h2>
 
             {ordenEmitida && (
               <div
                 role="status"
-                className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 shadow-sm"
+                className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 shadow-sm"
               >
-                ✅ Orden #482 enviada a Terminal Bahía Blanca. Logística terrestre reservada.
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                <span>
+                  {opcionElegida.id === 'no-desviar'
+                    ? 'Decisión registrada: no desviar. El buque sale con la carga que permite el calado.'
+                    : `Orden #${NUMERO_ORDEN_DEMO} emitida: el buque se desvía al sur para completar la carga en ${opcionElegida.nombre}.`}
+                </span>
               </div>
             )}
 
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
-              <div className="text-xs font-semibold uppercase tracking-wider text-blue-700">
-                Arbitraje Logístico
-              </div>
-              <p className="mt-2 text-lg font-bold text-slate-800">
-                💡 Adelantar zarpe al {fmtDiaCorto(mejorDia.fecha)}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-emerald-600">
-                + {fmtUsd(ahorroArbitraje)} USD de ahorro frente al {fmtDiaSemana(peorDia.fecha)}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
+            <div className={`${CARD} p-5`}>
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-700">
-                <Route className="h-4 w-4" /> Simulador Top-off (Bahía Blanca)
+                <Route className="h-4 w-4" /> Simulador Top-off
               </div>
-              <p className="mt-2 text-lg font-bold text-slate-800">
-                Completar {fmtTn(peorDia.tonelaje_no_cargado_tn)} por tren
+              <div className="mt-3 rounded-lg bg-emerald-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Mejor opción</div>
+                <div className="mt-1 text-xl font-bold text-slate-800">
+                  {opcionMejor.id === 'no-desviar' ? 'No desviar' : `Top-off en ${opcionMejor.nombre}`}
+                </div>
+                <div className="mt-1 text-2xl font-bold text-emerald-700">
+                  {opcionMejor.id === 'no-desviar' ? 'Sin ahorro' : fmtUsdConSigno(opcionMejor.ahorroNeto)}
+                </div>
+                <div className="text-sm text-emerald-700">
+                  {opcionMejor.id === 'no-desviar' ? 'Ningún puerto compensa su costo' : 'de ahorro neto'}
+                </div>
+              </div>
+              <p className="mt-3 text-sm text-slate-700">
+                El buque carga parcialmente en el Gran Rosario y navega al sur para completar {fmtTn(tnTopOff)} en
+                el puerto elegido.
               </p>
-              <dl className="mt-3 space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-slate-500">Costo extra</dt>
-                  <dd className="font-semibold text-red-600">-{fmtUsd(COSTO_DESVIO_USD)}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-slate-500">Ahorro neto</dt>
-                  <dd className="font-bold text-emerald-600">+{fmtUsd(ahorroNetoDesvio)}</dd>
-                </div>
-              </dl>
+              <table className="mt-2 w-full text-left text-sm">
+                <thead className="text-xs uppercase tracking-wider text-slate-600">
+                  <tr className="border-b border-blue-200">
+                    <th scope="col" className="py-1.5 pr-2">Opción</th>
+                    <th scope="col" className="py-1.5 pr-2 text-right">Costo</th>
+                    <th scope="col" className="whitespace-nowrap py-1.5 text-right">Ahorro neto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {opcionesTopOff.map((o) => {
+                    const esMejor = o.id === opcionMejor.id
+                    const esElegida = o.id === opcionElegida.id
+                    return (
+                      <tr
+                        key={o.id}
+                        onClick={() => !ordenEmitida && setSeleccionId(o.id)}
+                        className={`border-b border-blue-100 ${ordenEmitida ? '' : 'cursor-pointer'} ${esElegida ? 'bg-blue-50' : ''}`}
+                      >
+                        <td className="py-1 pl-2 pr-2 align-top">
+                          <label className="flex min-h-11 items-center gap-2 font-semibold text-slate-800">
+                            <input
+                              type="radio"
+                              name="top-off"
+                              className="h-4 w-4 accent-blue-600"
+                              checked={esElegida}
+                              disabled={ordenEmitida}
+                              onChange={() => setSeleccionId(o.id)}
+                            />
+                            {o.nombre}
+                          </label>
+                          {esMejor && (
+                            <span className="text-xs font-semibold text-emerald-700">Mejor opción</span>
+                          )}
+                          {o.costo > 0 && (
+                            <div className="text-xs text-slate-600">
+                              Días extra {fmtUsd(o.costoDias)} · Premio del grano {fmtUsd(o.costoPremio)}
+                            </div>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap py-2 pr-2 text-right align-top font-semibold text-red-700">
+                          {o.costo > 0 ? `-${fmtUsd(o.costo)}` : fmtUsd(0)}
+                        </td>
+                        <td
+                          className={`whitespace-nowrap py-2 text-right align-top font-bold ${o.ahorroNeto < 0 ? 'text-red-700' : 'text-emerald-700'}`}
+                        >
+                          {fmtUsdConSigno(o.ahorroNeto)}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
               <button
                 onClick={emitirDesvio}
                 disabled={ordenEmitida}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
+                className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600 disabled:shadow-none"
               >
                 {ordenEmitida ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4" /> Orden Ejecutada
+                    <CheckCircle2 className="h-4 w-4" />{' '}
+                    {opcionElegida.id === 'no-desviar' ? 'Decisión registrada' : 'Orden Ejecutada'}
+                  </>
+                ) : opcionElegida.id === 'no-desviar' ? (
+                  <>
+                    <Send className="h-4 w-4" /> Registrar decisión: no desviar
                   </>
                 ) : (
                   <>
@@ -533,10 +647,41 @@ export default function App() {
                   </>
                 )}
               </button>
+              <div className="mt-5 border-t border-slate-200 pt-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Supuestos</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-slate-600">
+                  <li>Costo = días extra de buque ({fmtUsd(COSTO_DIARIO_BUQUE_USD)} por día, demo) + premio del grano por tonelada completada.</li>
+                  {PUERTOS_TOP_OFF.map((p) => (
+                    <li key={p.id}>
+                      {p.nombre}: {p.diasExtra} días extra (demo) y USD {p.premioUsdTn}/tn de premio del grano (
+                      {p.premioEsReferencia
+                        ? 'referencia: dentro del diferencial del maíz que observó Sio Granos sobre Gran Rosario, unos USD 32 a 40/tn en 2021 y 2022'
+                        : 'demo'}
+                      ).
+                    </li>
+                  ))}
+                  <li>Toneladas a completar y beneficio: las del peor día de la ventana de 72 hs.</li>
+                  <li>Modelo: 2.200 tn perdidas por pie de calado faltante.</li>
+                  <li>Panamax de referencia, 45.000 tn (supuesto del modelo; la BCR cita Panamax de 60.000 a 65.000 tn).</li>
+                  <li>Calado de diseño del Panamax (supuesto): 34 ft; pies faltantes = 34 − calado seguro.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wider text-blue-700">
+                Arbitraje Logístico
+              </div>
+              <p className="mt-2 flex items-center gap-2 text-lg font-bold text-slate-800">
+                <Lightbulb className="h-5 w-5 shrink-0 text-blue-600" /> Adelantar zarpe al {fmtDiaCorto(mejorDia.fecha)}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-emerald-700">
+                + {fmtUsd(ahorroArbitraje)} de ahorro frente al {fmtDiaSemana(peorDia.fecha)}
+              </p>
             </div>
           </aside>
         </div>
-      </div>
+      </main>
     </div>
   )
 }
