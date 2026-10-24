@@ -1,6 +1,6 @@
 # Calado Predictivo
 
-Agro-fintech command center. Projects the Paraná river height at Rosario, derives the safe draft of a Panamax vessel, and quantifies lost tonnage and lucro cesante in USD. Recommends date arbitrage and top-off at Bahía Blanca. Hackathon MVP (5-6 h): the pitch is the product.
+Agro-fintech command center. Projects the Paraná river height at Rosario, derives the safe draft of a Panamax vessel, and quantifies lost tonnage and lucro cesante in USD. Recommends date arbitrage and a top-off port (Bahía Blanca or Quequén). Hackathon MVP (4 h build): the pitch is the product.
 
 ## Layout
 - `api/main.py`: single-file FastAPI app (scraping, vessel DB, draft model, endpoints).
@@ -22,9 +22,13 @@ calado, bajante, falso flete, lucro cesante, Panamax, top-off, IMO, INA, BCR, AI
 Demo data is allowed. Unlabeled demo data is not.
 - While any source is simulated, the UI shows one visible "datos de demo" badge.
 - AIS is always simulated (hardcoded `BUQUES`): never show it as live.
-- Demo values today (inline, keep them as named constants marked `DEMO`): previous days and projection (`altura_para`, `DELTAS_PROYECCION_M`), `BUQUES`, `COSTO_DESVIO_USD`, the order number.
+- Demo values today (inline, keep them as named constants marked `DEMO`): previous days and projection (`altura_para`, `DELTAS_PROYECCION_M`), `BUQUES`, top-off port costs (extra vessel days + grain premium at the completion port), the order number.
 - Real sources attempted: river height (INA) and soy price (BCR) via scraping. Selectors are placeholders; on failure use the fallback and the `simulado` state (yellow indicator).
 - Model assumptions: 2,200 tn per foot of draft, 45,000 tn base load. Changing one means updating it here (single source).
+
+## Top-off mechanic
+The vessel loads partially at Gran Rosario and sails south to complete its cargo at the port. Never state or imply that the cargo travels by train from Rosario: no source supports it.
+- Ports, in priority order: 1) Bahía Blanca, 2) Quequén. Buenos Aires is not an option (34 ft draft, no grain operations).
 
 ## How to work
 - Read-only until a change is requested. Explore the code before editing and report what you found.
@@ -36,8 +40,9 @@ Demo data is allowed. Unlabeled demo data is not.
 - Never read or write `.env`, keys or credentials. Every external call gets a timeout and a fallback.
 
 ## Hackathon constraints
-- Primary persona: the agroexportadora. Golden path: pick date -> see projection -> simulate Bahía Blanca top-off -> export CSV. Must work on every commit.
-- Agencia marítima is stretch (does not exist yet): a read-only view that receives the diversion order, backed by an in-memory `POST/GET /api/ordenes`. Only after the golden path is polished.
-- Cut scope before quality. Anything outside the golden path is badged as demo or cut.
+- Scope is closed. IN: the existing dashboard, a "datos de demo" badge, an AIS indicator that never shows green, a top-off port comparison (Bahía Blanca, Quequén) with demo costs, a "escenario crítico" label, rehearsal. OUT: real scraping, ML/LLM, live AIS, agencia view, tests, README roadmap. If a request is not IN, say no.
+- Primary persona: the agroexportadora. Golden path: today -> chart -> lucro cesante -> top-off port comparison -> export CSV. Must work on every commit.
+- Default vessel is the Panamax. Nobody links an IMO in the demo.
+- Never claim INA/BCR data or an AI model is live.
 - If a task exceeds 30 min without closing, stop and report options.
 - UI copy in Spanish.
