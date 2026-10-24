@@ -30,7 +30,7 @@ import {
   X,
 } from 'lucide-react'
 
-const API_BASE = 'http://localhost:8000/api'
+const API_BASE = '/api' // proxy de Vite (vite.config.js) -> http://127.0.0.1:8000
 const COSTO_DESVIO_USD = 450_000 // costo logístico extra de completar en Bahía Blanca
 
 const fmtTn = (n) => `${n.toLocaleString('es-AR')} tn`
