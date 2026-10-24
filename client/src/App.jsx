@@ -122,6 +122,91 @@ function ChartTooltip({ active, payload, label }) {
   )
 }
 
+// Encabezado compartido. Sin `fuentes` (pantalla inicial) solo muestra el aviso de datos simulados.
+function Encabezado({ ubicacion, fuentes }) {
+  return (
+    <header className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <div className="rounded-lg bg-blue-600 p-2">
+          <Ship className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-slate-800">Paranax</h1>
+          <p className="text-sm text-slate-600">{ubicacion} - agroexportación</p>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Siempre visible: los días previos, la proyección, el AIS y los costos son simulados. */}
+        <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700">
+          Datos simulados
+        </span>
+        {fuentes && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
+            <Fuente nombre="INA (Río)" estado={fuentes.ina} />
+            <span aria-hidden="true" className="text-slate-300">|</span>
+            <Fuente nombre="BCR (Soja)" estado={fuentes.bcr} />
+            <span aria-hidden="true" className="text-slate-300">|</span>
+            <Fuente nombre="AIS (Buque)" estado="demo" />
+          </div>
+        )}
+      </div>
+    </header>
+  )
+}
+
+// Primera pantalla: sin IMO no se muestra ningún dato ni número.
+function PantallaInicial({ imoInput, setImoInput, onSubmit, vinculando, error }) {
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      <main className="mx-auto max-w-7xl space-y-6 p-6">
+        <Encabezado ubicacion="Gran Rosario - Río Paraná" />
+        <section className={`${CARD} mx-auto mt-[12vh] max-w-xl p-8`}>
+          <h2 className="text-2xl font-bold text-slate-800">Ingresá el IMO de tu buque</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Con el IMO calculamos el calado seguro, las toneladas que no podés cargar por la bajante y cuánto
+            cuesta completar la carga en otro puerto.
+          </p>
+          <form onSubmit={onSubmit} className="mt-6">
+            <label htmlFor="imo" className="text-xs font-medium uppercase tracking-wider text-slate-600">
+              IMO del buque
+            </label>
+            <div className="mt-1 flex flex-col gap-2 sm:flex-row">
+              <input
+                id="imo"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={7}
+                value={imoInput}
+                onChange={(e) => setImoInput(e.target.value)}
+                placeholder="Ej.: 9436000"
+                aria-describedby="imo-ayuda"
+                aria-invalid={error ? 'true' : undefined}
+                className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-base text-slate-800 placeholder:text-slate-500 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+              />
+              <button
+                type="submit"
+                disabled={vinculando || !imoInput.trim()}
+                className="min-h-11 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600"
+              >
+                {vinculando ? 'Consultando…' : 'Consultar buque'}
+              </button>
+            </div>
+            <p id="imo-ayuda" className="mt-2 text-xs text-slate-600">
+              El IMO es el número de 7 dígitos que identifica a cada buque.
+            </p>
+            {error && (
+              <p role="alert" className="mt-2 text-sm font-medium text-red-700">
+                {error}
+              </p>
+            )}
+          </form>
+        </section>
+      </main>
+    </div>
+  )
+}
+
 export default function App() {
   const [fecha, setFecha] = useState(hoyISO)
   const [data, setData] = useState(null)
@@ -139,6 +224,7 @@ export default function App() {
 
   // Re-consulta ante cambios de fecha o de buque vinculado.
   useEffect(() => {
+    if (!buque) return
     let activo = true
     const params = new URLSearchParams({ fecha })
     if (buque) params.set('imo', buque.imo)
@@ -171,18 +257,23 @@ export default function App() {
     e.preventDefault()
     const imo = imoInput.trim()
     if (!imo) return
+    if (!/^\d{7}$/.test(imo)) {
+      setBuqueError('El IMO tiene 7 dígitos. Revisá el número e intentá de nuevo.')
+      return
+    }
     setVinculando(true)
     setBuqueError(null)
     try {
       const r = await fetch(`${API_BASE}/buque/${encodeURIComponent(imo)}`)
-      if (r.status === 404) throw new Error('IMO no encontrado')
-      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      if (r.status === 404) throw new Error('No encontramos un buque con ese IMO. Revisá el número e intentá de nuevo.')
+      if (!r.ok) throw new Error('No pudimos consultar el buque. Intentá de nuevo en unos instantes.')
       setBuque(await r.json())
       setOrdenEmitida(false)
       setSeleccionId(null)
     } catch (err) {
-      setBuque(null)
-      setBuqueError(err.message)
+      setBuqueError(
+        err instanceof TypeError ? 'No pudimos conectar con el servicio. Verificá la conexión e intentá de nuevo.' : err.message,
+      )
     } finally {
       setVinculando(false)
     }
@@ -190,6 +281,8 @@ export default function App() {
 
   function desvincularAis() {
     setBuque(null)
+    setData(null)
+    setError(null)
     setImoInput('')
     setBuqueError(null)
     setOrdenEmitida(false)
@@ -246,6 +339,18 @@ export default function App() {
     setTimeout(() => setExportado(false), 3000)
   }
 
+  if (!buque) {
+    return (
+      <PantallaInicial
+        imoInput={imoInput}
+        setImoInput={setImoInput}
+        onSubmit={vincularAis}
+        vinculando={vinculando}
+        error={buqueError}
+      />
+    )
+  }
+
   if (!data && error) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-slate-800">
@@ -297,30 +402,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800">
       <main className="mx-auto max-w-7xl space-y-6 p-6">
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-blue-600 p-2">
-              <Ship className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-800">Paranax</h1>
-              <p className="text-sm text-slate-600">{data.ubicacion} - agroexportación</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Siempre visible: los días previos, la proyección, el AIS y los costos son demo. */}
-            <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700">
-              Datos simulados
-            </span>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
-              <Fuente nombre="INA (Río)" estado={data.fuentes.ina} />
-              <span aria-hidden="true" className="text-slate-300">|</span>
-              <Fuente nombre="BCR (Soja)" estado={data.fuentes.bcr} />
-              <span aria-hidden="true" className="text-slate-300">|</span>
-              <Fuente nombre="AIS (Buque)" estado="demo" />
-            </div>
-          </div>
-        </header>
+        <Encabezado ubicacion={data.ubicacion} fuentes={data.fuentes} />
 
         {/* Barra de controles */}
         <section className={`${CARD} flex flex-wrap items-end gap-x-6 gap-y-4 p-4`}>
