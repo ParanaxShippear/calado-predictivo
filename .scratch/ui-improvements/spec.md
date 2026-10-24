@@ -35,3 +35,9 @@ Dark mode and a token system, new features, any change to the API, the model or 
 ## Verification
 
 `npm run lint` and `npm run build` pass; `impeccable detect` and the contrast measurement show no real failures; the golden path rehearsal (spec `top-off-demo`) still passes; screenshots at 1400 px and 390 px reviewed.
+
+## Amendment (2026-10-24, owner)
+
+- The badge reads "datos simulados" instead of "datos de demo".
+- The assumptions section under the top-off table is removed from the UI: the client is not interested in it. Item 4 above ("the assumptions follow it as a footnote") no longer applies. The assumptions stay documented in `README.md` and `AGENTS.md`.
+- The system is called Paranax (header, page title, README, API title). The repository keeps its name.

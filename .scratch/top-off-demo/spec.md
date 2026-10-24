@@ -1,5 +1,7 @@
 Status: ready-for-agent
 
+Amended 2026-10-24 by the owner: the badge reads "datos simulados", the assumptions text under the top-off table was removed from the UI, and the system is called Paranax. See `.scratch/ui-improvements/spec.md`.
+
 # Spec: Top-off comparison and demo labelling
 
 ## Problem Statement
@@ -14,11 +16,11 @@ The agroexportadora sees a bajante coming in 72 h and a lucro cesante figure in 
 
 One dashboard, golden path: hoy -> gráfico -> lucro cesante -> comparación de top-off -> CSV.
 
-The top-off panel compares Bahía Blanca (priority 1), Quequén (priority 2) and a "no desviar" row. Each row shows cost and ahorro neto. The best option is marked. The user can select any row, including "no desviar". Issuing the order names the selected port. Everything simulated is labelled: one "datos de demo" badge, an AIS indicator that is never green, a "escenario crítico" label, and the assumptions as text under the table.
+The top-off panel compares Bahía Blanca (priority 1), Quequén (priority 2) and a "no desviar" row. Each row shows cost and ahorro neto. The best option is marked. The user can select any row, including "no desviar". Issuing the order names the selected port. Everything simulated is labelled: one "datos simulados" badge, an AIS indicator that is never green, a "escenario crítico" label, and the assumptions as text under the table.
 
 ## User Stories
 
-1. As an agroexportadora planner, I want a visible "datos de demo" badge, so that nobody mistakes the demo numbers for live data.
+1. As an agroexportadora planner, I want a visible "datos simulados" badge, so that nobody mistakes the demo numbers for live data.
 2. As an agroexportadora planner, I want the AIS indicator to never show green, so that simulated vessel data is never presented as live.
 3. As an agroexportadora planner, I want the INA and BCR indicators to keep reflecting what the API reports (`simulado` yellow on fallback), so that I never see a live claim the system cannot back.
 4. As an agroexportadora planner, I want the projection labelled "escenario crítico", so that the audience knows the bajante is a staged scenario.
@@ -54,7 +56,7 @@ The top-off panel compares Bahía Blanca (priority 1), Quequén (priority 2) and
 - Selection state: the best option is preselected on every recompute; the user may select another row. The order, the confirmation text and the KPI all read the selected row.
 - Order confirmation names the selected port and states the mechanic: the vessel is diverted south to complete cargo. The order number stays a `DEMO` constant. "Por tren" and "Logística terrestre reservada" are removed from every UI string, including the simulator title ("Completar X tn por tren") and the KPI/order texts.
 - Selecting "no desviar" turns the button into "Registrar decisión: no desviar". Pressing it shows "Decisión registrada: no desviar" and the KPI sub-text reads "Sin desvío: no hay costo ni ahorro de top-off". No order number and no persistence (an endpoint is OUT of scope).
-- "datos de demo" badge: one visible badge in the header, shown while any source is simulated (today always, since the previous days, the projection, AIS and the port costs are demo).
+- "datos simulados" badge: one visible badge in the header, shown while any source is simulated (today always, since the previous days, the projection, AIS and the port costs are demo).
 - AIS indicator: never green. It shows a simulated state both with and without a linked vessel. The IMO search stays as it exists today but the demo never uses it. No new AIS features.
 - INA and BCR indicators: unchanged, the API state is shown as is. The failure fallback keeps the `simulado` yellow state.
 - "escenario crítico" label: shown on the chart section while the projection is the staged bajante (always, today).
@@ -70,7 +72,7 @@ The top-off panel compares Bahía Blanca (priority 1), Quequén (priority 2) and
   1. `cd client && npm run lint && npm run build` pass.
   2. API up, `curl localhost:8000/api/pronostico-calado` returns the unchanged contract.
   3. Search `App.jsx` for "tren": no match in any user-visible text. Also check "logística terrestre".
-  4. The "datos de demo" badge is visible on load.
+  4. The "datos simulados" badge is visible on load.
   5. The AIS indicator is never green: check before linking an IMO and after linking `9436000`.
   6. Issue the order with each port selected: the confirmation names that port (Bahía Blanca and Quequén), never a fixed one.
   7. The "no desviar" row appears and can be selected; with it selected the button reads "Registrar decisión: no desviar" and pressing it shows the decision as recorded. Also check a date where every port is negative and "no desviar" is marked best (con el Panamax por defecto no existe, porque su pérdida nunca llega a cero; usar el Handymax IMO `9321483` el 2026-10-04).

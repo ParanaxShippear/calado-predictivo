@@ -1,8 +1,8 @@
-# Calado Predictivo
+# Paranax
 
 Panel de decisiones para agroexportadoras del Gran Rosario. Proyecta la altura del Río Paraná en Rosario, calcula el calado máximo seguro de un buque Panamax y traduce la bajante en toneladas no cargadas y lucro cesante en dólares. Compara además en qué puerto conviene completar la carga (top-off).
 
-Es un prototipo de hackathon. Parte de los datos son simulados y la interfaz lo indica (ver "Datos reales y datos de demo").
+Es un prototipo de hackathon. Parte de los datos son simulados y la interfaz lo indica (ver "Datos reales y datos simulados").
 
 ## Problema
 
@@ -33,7 +33,7 @@ Cada puerto se compara con la opción de no desviar, que tiene costo y ahorro ne
 
 El costo del top-off tiene dos componentes: los días extra de buque (días por el costo diario del buque) y el premio del grano en el puerto de completamiento (USD por tonelada completada). Los valores iniciales están definidos en `.scratch/top-off-demo/spec.md`.
 
-## Datos reales y datos de demo
+## Datos reales y datos simulados
 
 | Dato | Origen | Estado |
 |---|---|---|
@@ -46,7 +46,7 @@ El costo del top-off tiene dos componentes: los días extra de buque (días por 
 
 La orden de desvío es solo visual: no se envía a ningún sistema.
 
-Supuestos del modelo:
+Supuestos del modelo (no se muestran en la interfaz; se documentan acá y en `AGENTS.md`):
 
 - 2.200 tn perdidas por pie de calado faltante en un Panamax. Cae dentro del rango que cita la BCR (2.000 a 2.500 tn por pie).
 - 45.000 tn de carga base. Es un supuesto no verificado: la BCR cita Panamax de 60.000 a 65.000 tn.
@@ -60,10 +60,10 @@ Supuestos del modelo:
 Incluido en la demo:
 
 - El dashboard actual.
-- Un aviso visible de "datos de demo".
+- Un aviso visible de "datos simulados".
 - Un indicador AIS que no se muestra en verde.
 - Comparación de Bahía Blanca y Quequén, con una fila "no desviar".
-- Supuestos visibles y una etiqueta de "escenario crítico".
+- Una etiqueta de "escenario crítico".
 
 Fuera de alcance: scraping real, modelos de ML o LLM, AIS en vivo, vista para la agencia marítima y tests.
 

@@ -28,6 +28,7 @@ Un modelo proyecta la altura del río a 72 hs y recomienda fecha de zarpe y puer
 
 ## Decisions
 
+- **Product name: Paranax** (team name: ParanaLove). Set by the owner on 2026-10-24; the form answers above do not name the product.
 - **Track: Finanzas.** The repo frames the product as an agro-fintech command center (lucro cesante in USD, top-off cost comparison).
 - **AI answer is deliberately honest.** `AGENTS.md` puts ML/LLM out of scope and forbids claiming an AI model is live. The projection is simulated and the model rules are deterministic; the form says so.
 - **Market size uses only sourced figures.** The number of exporting companies was not found in any source, so it is not claimed. Figures are cited with their source below.
@@ -55,7 +56,7 @@ These were taken from search result summaries, not from the full reports. Open t
 
 Guardrails for the recording:
 
-- Say "datos de demo" out loud during the demo. The badge is already in the UI.
+- Say "datos simulados" out loud during the demo. The badge is already in the UI.
 - Do not say "AI en vivo" or "predicción con machine learning". The projection is simulated.
 - Record with the backend already running, to avoid the scraping timeout on camera.
 
