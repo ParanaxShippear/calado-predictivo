@@ -399,7 +399,11 @@ export default function App() {
               icon={ShieldCheck}
               label="Ahorro Logístico Asegurado"
               value={`${fmtUsdConSigno(ahorroNetoDesvio)} USD`}
-              sub={`Neto tras el costo del top-off en ${opcionElegida.nombre}`}
+              sub={
+                opcionElegida.id === 'no-desviar'
+                  ? 'Sin desvío: no hay costo ni ahorro de top-off'
+                  : `Neto tras el costo del top-off en ${opcionElegida.nombre}`
+              }
               tone="text-emerald-600"
             />
           ) : (
@@ -524,8 +528,14 @@ export default function App() {
                 role="status"
                 className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 shadow-sm"
               >
-                ✅ Orden #{NUMERO_ORDEN_DEMO} emitida: el buque se desvía al sur para completar la carga en{' '}
-                {opcionElegida.nombre}.
+                {opcionElegida.id === 'no-desviar' ? (
+                  <>✅ Decisión registrada: no desviar. El buque sale con la carga que permite el calado.</>
+                ) : (
+                  <>
+                    ✅ Orden #{NUMERO_ORDEN_DEMO} emitida: el buque se desvía al sur para completar la carga en{' '}
+                    {opcionElegida.nombre}.
+                  </>
+                )}
               </div>
             )}
 
@@ -618,16 +628,17 @@ export default function App() {
               </ul>
               <button
                 onClick={emitirDesvio}
-                disabled={ordenEmitida || opcionElegida.id === 'no-desviar'}
+                disabled={ordenEmitida}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
               >
                 {ordenEmitida ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4" /> Orden Ejecutada
+                    <CheckCircle2 className="h-4 w-4" />{' '}
+                    {opcionElegida.id === 'no-desviar' ? 'Decisión registrada' : 'Orden Ejecutada'}
                   </>
                 ) : opcionElegida.id === 'no-desviar' ? (
                   <>
-                    <Send className="h-4 w-4" /> Sin desvío: no hay orden para emitir
+                    <Send className="h-4 w-4" /> Registrar decisión: no desviar
                   </>
                 ) : (
                   <>
