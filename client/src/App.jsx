@@ -625,6 +625,10 @@ export default function App() {
                   <>
                     <CheckCircle2 className="h-4 w-4" /> Orden Ejecutada
                   </>
+                ) : opcionElegida.id === 'no-desviar' ? (
+                  <>
+                    <Send className="h-4 w-4" /> Sin desvío: no hay orden para emitir
+                  </>
                 ) : (
                   <>
                     <Send className="h-4 w-4" /> Emitir Orden de Desvío
