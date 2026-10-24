@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="Calado Predictivo - Gran Rosario")
+app = FastAPI(title="Paranax - Gran Rosario")
 
 app.add_middleware(
     CORSMiddleware,

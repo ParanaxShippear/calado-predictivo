@@ -94,12 +94,12 @@ function KpiCard({ icon: Icon, label, value, sub, tone = 'text-blue-600' }) {
   )
 }
 
-// Refleja el estado real de cada fuente: en vivo, fallback (valor por defecto) o dato de demo.
+// Refleja el estado real de cada fuente: en vivo, fallback (valor por defecto) o dato simulado.
 function Fuente({ nombre, estado }) {
   const [punto, texto] = {
     en_vivo: ['bg-emerald-600', 'en vivo'],
     simulado: ['bg-amber-500', 'valor por defecto'],
-    demo: ['bg-amber-500', 'demo'],
+    demo: ['bg-amber-500', 'simulado'],
   }[estado]
   return (
     <span className="inline-flex items-center gap-1.5">
@@ -303,14 +303,14 @@ export default function App() {
               <Ship className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">Calado Predictivo · Command Center</h1>
+              <h1 className="text-xl font-bold text-slate-800">Paranax</h1>
               <p className="text-sm text-slate-600">{data.ubicacion} - agroexportación</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {/* Siempre visible: los días previos, la proyección, el AIS y los costos son demo. */}
             <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-700">
-              Datos de demo
+              Datos simulados
             </span>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm">
               <Fuente nombre="INA (Río)" estado={data.fuentes.ina} />
@@ -647,25 +647,6 @@ export default function App() {
                   </>
                 )}
               </button>
-              <div className="mt-5 border-t border-slate-200 pt-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Supuestos</h3>
-                <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-slate-600">
-                  <li>Costo = días extra de buque ({fmtUsd(COSTO_DIARIO_BUQUE_USD)} por día, demo) + premio del grano por tonelada completada.</li>
-                  {PUERTOS_TOP_OFF.map((p) => (
-                    <li key={p.id}>
-                      {p.nombre}: {p.diasExtra} días extra (demo) y USD {p.premioUsdTn}/tn de premio del grano (
-                      {p.premioEsReferencia
-                        ? 'referencia: dentro del diferencial del maíz que observó Sio Granos sobre Gran Rosario, unos USD 32 a 40/tn en 2021 y 2022'
-                        : 'demo'}
-                      ).
-                    </li>
-                  ))}
-                  <li>Toneladas a completar y beneficio: las del peor día de la ventana de 72 hs.</li>
-                  <li>Modelo: 2.200 tn perdidas por pie de calado faltante.</li>
-                  <li>Panamax de referencia, 45.000 tn (supuesto del modelo; la BCR cita Panamax de 60.000 a 65.000 tn).</li>
-                  <li>Calado de diseño del Panamax (supuesto): 34 ft; pies faltantes = 34 − calado seguro.</li>
-                </ul>
-              </div>
             </div>
 
             <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
