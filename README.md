@@ -93,7 +93,19 @@ Stack: Python 3, FastAPI, Uvicorn, Requests y BeautifulSoup en el backend; React
 | `GET /api/pronostico-calado?imo=9436000` | Recalcula con la capacidad del buque indicado. Se puede combinar con `fecha`. |
 | `GET /api/buque/{imo}` | Datos del buque (AIS simulado). |
 
-IMO de ejemplo: `9436000` (Agro Pioneer, Panamax), `9321483` (Pampa Star, Handymax) y `9512277` (Gran Chaco, Supramax).
+### IMO de prueba
+
+La base de buques es simulada: los nombres y datos son ficticios. En el campo "Buscador de buque (AIS)" de la interfaz, o en `GET /api/buque/{imo}`, se pueden usar:
+
+| IMO | Buque | Tipo | Carga óptima | Calado de diseño (supuesto) | Pérdida a 72 hs (escenario actual) |
+|---|---|---|---|---|---|
+| `9436000` | Agro Pioneer | Panamax | 45.000 tn | 34 ft | 13.300 tn, lucro cesante de USD 5.320.000 |
+| `9321483` | Pampa Star | Handymax | 32.000 tn | 30 ft | 3.200 tn, lucro cesante de USD 1.280.000 |
+| `9512277` | Gran Chaco | Supramax | 55.000 tn | 36 ft | 21.600 tn, lucro cesante de USD 8.640.000 |
+
+- El Panamax es el buque por defecto de la demo: sin vincular ningún IMO se usa Agro Pioneer.
+- Para ver el caso en que todos los puertos dan ahorro neto negativo y "No desviar" es la mejor opción, vincular `9321483` y elegir la fecha 2026-10-04.
+- Un IMO que no está en la tabla devuelve `404` con el mensaje "IMO ... no encontrado".
 
 ## Ejecución
 
