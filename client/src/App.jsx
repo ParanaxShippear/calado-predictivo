@@ -45,7 +45,7 @@ const PUERTOS_TOP_OFF = [
 
 const fmtTn = (n) => `${n.toLocaleString('es-AR')} tn`
 const fmtUsd = (n) => `$${n.toLocaleString('en-US')}`
-const fmtUsdPerdida = (n) => `-$${Math.abs(n).toLocaleString('en-US')} USD`
+const fmtUsdPerdida = (n) => `${n === 0 ? '' : '-'}$${Math.abs(n).toLocaleString('en-US')} USD`
 const fmtUsdConSigno = (n) => `${n < 0 ? '-' : '+'}${fmtUsd(Math.abs(n))}`
 const fmtFecha = (iso) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('es-AR', {
