@@ -131,7 +131,7 @@ function Encabezado({ ubicacion, fuentes }) {
           <Ship className="h-6 w-6 text-white" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-slate-800">Paranax</h1>
+          <h1 className="text-xl font-bold text-slate-800">Paranax - Calado predictivo y unificado</h1>
           <p className="text-sm text-slate-600">{ubicacion} - agroexportación</p>
         </div>
       </div>
@@ -569,9 +569,6 @@ export default function App() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <p className="mt-2 text-xs text-slate-600">
-                Escala vertical recortada, de {fmtDec(yMin, 1)} a {fmtDec(yMax, 1)} m: la caída se ve más pronunciada de lo que es.
-              </p>
             </section>
 
             <section className={`${CARD} p-5`}>

@@ -42,3 +42,5 @@ Dark mode and a token system, new features, any change to the API, the model or 
 - The assumptions section under the top-off table is removed from the UI: the client is not interested in it. Item 4 above ("the assumptions follow it as a footnote") no longer applies. The assumptions stay documented in `README.md` and `AGENTS.md`.
 - The system is called Paranax (header, page title, README, API title). The repository keeps its name.
 - The first screen asks for the IMO ("Ingresá el IMO de tu buque") and shows no data or numbers, only the "datos simulados" badge. Nothing is requested from the API until a valid IMO is linked. Errors read: 7 digits expected, IMO not found, service unreachable. Unlinking the vessel returns to that screen. The demo uses IMO `9436000`.
+- The title reads "Paranax - Calado predictivo y unificado" (header and page title).
+- The caption about the cropped vertical scale under the chart is removed.
