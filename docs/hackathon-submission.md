@@ -18,7 +18,7 @@ Un panel que proyecta la altura del río a 72 hs, calcula el calado seguro y tra
 Equipos de logística y comercialización de agroexportadoras del Gran Rosario, arrancando por agroexportadoras medianas y traders.
 
 **¿Qué tan grande es el mercado?**
-Cerca del 75% de las exportaciones argentinas de granos, harinas y aceites sale por unas 20 terminales del Gran Rosario (75,7 M de tn en 2025, según la BCR). La bajante de 2021 costó más de USD 620 M al sector.
+Cerca del 75% de las exportaciones argentinas de granos, harinas y aceites sale por unas 20 terminales del Gran Rosario (75,7 M de tn en 2025, según la BCR). Entre marzo y agosto de 2021, la bajante les costó a los exportadores del Gran Rosario más de USD 300 M: barcos que salen sin llenar, cargas que se completan en otros puertos y harina y aceite vendidos más baratos.
 
 **¿Por qué ahora?**
 Las bajantes extremas del Paraná siempre fueron recurrentes y además se ha comprobado que en los últimos años el nivel del río se ha vuelto más variable e impredecible debido a fenómenos climáticos (fuentes: Instituto Nacional del Agua, Prefectura Naval Argentina e Instituto Nacional de Tecnología Agropecuaria). A pesar de todo esto la decisión sigue siendo manual. Los datos públicos (INA, BCR) y los modelos de proyección ya son accesibles para automatizar esa decisión.
@@ -43,7 +43,7 @@ Un modelo proyecta la altura del río a 72 hs y recomienda fecha de zarpe y puer
 | (same claim) | [Prefectura Naval Argentina (PNA), Registro del estado de los ríos](https://contenidosweb.prefecturanaval.gob.ar/alturas/): daily river heights by port, the record that shows the level swings. |
 | (same claim) | [Instituto Nacional de Tecnología Agropecuaria (INTA)](https://www.argentina.gob.ar/inta): technical reports, done with INA, describe the low water as an extreme hydrological and climatic drought beyond natural variability and link it to climate change. |
 | ~20 terminals | BCR report of May 2026: 30 port terminals over 70 km, 18 dispatch agro products. Another source (River Plate Shipping Guide, 2024 data) counts 34 and 22. Hence "unas 20". |
-| 2021 bajante cost more than USD 620 M | [Bloomberg Línea, citing BCR](https://www.bloomberglinea.com/2021/09/25/bajante-del-parana-argentina-ya-perdio-us-620m-y-los-pronosticos-no-mejoran/) |
+| Mar-Aug 2021 bajante cost Gran Rosario exporters more than USD 300 M (~315 M; the headline says 312): false freight, top-off at other ports, barges, industrial costs, lower meal and oil prices | [Bichos de Campo, 8-jul-2021, citing BCR](https://bichosdecampo.com/por-suerte-ahora-lo-va-a-dragar-el-estado-la-bajante-historica-del-parana-ya-costo-312-millones-de-dolares-en-mayores-costos/) |
 | 2022: almost USD 280 M in five months, USD 138 M of it falso flete | [BAE Negocios, citing BCR](https://www.baenegocios.com/economia/Por-la-bajante-del-Parana-se-perdieron-280-millones-de-dolares-en-cinco-meses-20220513-0109.html) |
 
 These were taken from search result summaries, not from the full reports. Open the links before quoting them in the video.

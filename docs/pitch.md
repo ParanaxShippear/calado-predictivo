@@ -31,7 +31,7 @@ Unas 300 palabras habladas, que a ritmo tranquilo dan 1:50. Quedan unos 10 segun
 > *[exportar CSV]* Exporto el reporte y lo llevo a la mesa de decisión.
 
 ### 1:35 – 1:50 · Por qué importa
-> Según la Bolsa de Comercio de Rosario, la bajante de 2021 le costó al sector más de 620 millones de dólares. Con una sola decisión bien tomada, la herramienta ya se pagó muchas veces.
+> Según la Bolsa de Comercio de Rosario, entre marzo y agosto de 2021 la bajante le costó a los exportadores del Gran Rosario más de 300 millones de dólares: barcos que salen sin llenar, cargas que se completan en otros puertos y harina y aceite vendidos más baratos. Con una sola decisión bien tomada, la herramienta ya se pagó muchas veces.
 
 ### 1:50 – 2:00 · Cierre
 > Hoy usamos datos de demo, marcados en pantalla, pero el modelo ya calcula. Calado Predictivo: que la bajante sea un número, no una sorpresa.
@@ -66,6 +66,6 @@ El video sigue el plan de `docs/hackathon-submission.md`: 0:00–0:45 negocio (g
 
 1. **Las cifras del gancho y de la demo.** Las 13.300 tn y los USD 5,3 M son los que el README da para el Panamax en el escenario actual. Los 3,49 m y los 29 pies dependen de la altura del día. Antes de grabar, abrir la app y copiar los números que muestra.
 2. **Que 45.000 tn y 34 pies son supuestos del modelo.** La BCR cita Panamax de 60.000 a 65.000 tn. Si el jurado pregunta, decirlo así. Lo que sí está respaldado es el rango de 2.000 a 2.500 tn por pie.
-3. **Las fuentes de las cifras de mercado.** El 75% y los USD 620 M salen de resúmenes de búsqueda. Abrir los links de `docs/hackathon-submission.md` antes de citarlos.
+3. **Las fuentes de las cifras de mercado.** El 75% y los más de USD 300 M salen de resúmenes de búsqueda. Abrir los links de `docs/hackathon-submission.md` antes de citarlos.
 4. **La descarga del CSV** en un navegador con ventana. Es lo único que el README marca como pendiente.
 5. **Cronometrar dos ensayos completos** con la app abierta. Si se pasa de 2:00, lo primero que se recorta es la explicación de por qué es el peor día y no la suma.
