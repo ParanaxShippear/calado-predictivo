@@ -14,3 +14,16 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Agent skill dumps (local copies; not part of the product)
+.atl/
+.agents/
+.claude/
+.codeartsdoer/
+.codebuddy/
+.codemaker/
+.commandcode/
+.minimax/
+.zencoder/
+skills/
+skills-lock.json
