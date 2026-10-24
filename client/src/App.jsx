@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   DollarSign,
   Download,
+  Lightbulb,
   Radar,
   Route,
   Ruler,
@@ -66,6 +67,16 @@ const fmtDiaSemana = (iso) =>
 const hoyISO = () => {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+// Colores del gráfico, definidos una sola vez.
+const COLOR_GRAFICO = {
+  historico: '#2563eb',
+  proyeccion: '#dc2626',
+  grilla: '#e2e8f0',
+  eje: '#334155',
+  referencia: '#94a3b8',
+  etiqueta: '#475569',
 }
 
 const CARD = 'rounded-xl border border-slate-200 bg-white shadow-sm'
@@ -422,11 +433,11 @@ export default function App() {
         </section>
 
         <div className="grid gap-6 lg:grid-cols-10">
-          {/* Columna izquierda (70%): gráfico + tabla */}
-          <div className="flex min-w-0 flex-col gap-6 lg:col-span-7">
+          {/* Columna izquierda: gráfico + tabla */}
+          <div className="order-2 flex min-w-0 flex-col gap-6 lg:order-1 lg:col-span-6">
             <section className={`${CARD} p-5`}>
               <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
-                <Anchor className="h-4 w-4 text-blue-600" /> Línea de flotación: histórico vs. proyección
+                <Anchor className="h-4 w-4 text-blue-600" /> Altura del río: histórico vs. proyección
                 <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold normal-case tracking-normal text-red-700">
                   Escenario crítico
                 </span>
@@ -434,12 +445,12 @@ export default function App() {
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                    <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
-                    <XAxis dataKey="fecha" tickFormatter={fmtFecha} stroke="#334155" fontSize={12} />
+                    <CartesianGrid stroke={COLOR_GRAFICO.grilla} strokeDasharray="3 3" />
+                    <XAxis dataKey="fecha" tickFormatter={fmtFecha} stroke={COLOR_GRAFICO.eje} fontSize={12} />
                     <YAxis
                       domain={[yMin, yMax]}
                       unit=" m"
-                      stroke="#334155"
+                      stroke={COLOR_GRAFICO.eje}
                       fontSize={12}
                       tickFormatter={(v) => fmtDec(v, 1)}
                     />
@@ -447,11 +458,11 @@ export default function App() {
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <ReferenceLine
                       x={fechaAnalisis}
-                      stroke="#94a3b8"
+                      stroke={COLOR_GRAFICO.referencia}
                       strokeDasharray="4 4"
                       label={{
                         value: data.es_hoy ? 'Hoy' : 'Fecha de análisis',
-                        fill: '#475569',
+                        fill: COLOR_GRAFICO.etiqueta,
                         fontSize: 12,
                         position: 'top',
                       }}
@@ -459,7 +470,7 @@ export default function App() {
                     <Line
                       name="Histórico"
                       dataKey="historico"
-                      stroke="#2563eb"
+                      stroke={COLOR_GRAFICO.historico}
                       strokeWidth={3}
                       dot={{ r: 4 }}
                       connectNulls={false}
@@ -467,7 +478,7 @@ export default function App() {
                     <Line
                       name="Proyección"
                       dataKey="proyeccion"
-                      stroke="#dc2626"
+                      stroke={COLOR_GRAFICO.proyeccion}
                       strokeWidth={3}
                       strokeDasharray="8 5"
                       dot={{ r: 4 }}
@@ -476,6 +487,9 @@ export default function App() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              <p className="mt-2 text-xs text-slate-600">
+                Escala vertical recortada, de {fmtDec(yMin, 1)} a {fmtDec(yMax, 1)} m: la caída se ve más pronunciada de lo que es.
+              </p>
             </section>
 
             <section className={`${CARD} p-5`}>
@@ -508,7 +522,7 @@ export default function App() {
                   <tbody>
                     {ventana.map((p) => (
                       <tr key={p.fecha} className="border-b border-slate-100">
-                        <td className="py-3 pr-4 font-medium capitalize">{fmtFecha(p.fecha)}</td>
+                        <td className="whitespace-nowrap py-3 pr-4 font-medium capitalize">{fmtFecha(p.fecha)}</td>
                         <td className="py-3 pr-4">{fmtM(p.altura_rio_m)}</td>
                         <td className="py-3 pr-4">{fmtFt(p.calado_maximo_seguro_pies)}</td>
                         <td className="py-3 pr-4 font-semibold">{fmtTn(p.tonelaje_recomendado_tn)}</td>
@@ -521,8 +535,8 @@ export default function App() {
             </section>
           </div>
 
-          {/* Columna derecha (30%): Centro de Decisiones */}
-          <aside className="flex min-w-0 flex-col gap-4 lg:col-span-3">
+          {/* Columna derecha: Centro de Decisiones (primero en pantallas angostas) */}
+          <aside className="order-1 flex min-w-0 flex-col gap-4 lg:order-2 lg:col-span-4">
             <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
               <Target className="h-4 w-4 text-blue-600" /> Centro de Decisiones
             </h2>
@@ -530,45 +544,43 @@ export default function App() {
             {ordenEmitida && (
               <div
                 role="status"
-                className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 shadow-sm"
+                className="flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 shadow-sm"
               >
-                {opcionElegida.id === 'no-desviar' ? (
-                  <>✅ Decisión registrada: no desviar. El buque sale con la carga que permite el calado.</>
-                ) : (
-                  <>
-                    ✅ Orden #{NUMERO_ORDEN_DEMO} emitida: el buque se desvía al sur para completar la carga en{' '}
-                    {opcionElegida.nombre}.
-                  </>
-                )}
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+                <span>
+                  {opcionElegida.id === 'no-desviar'
+                    ? 'Decisión registrada: no desviar. El buque sale con la carga que permite el calado.'
+                    : `Orden #${NUMERO_ORDEN_DEMO} emitida: el buque se desvía al sur para completar la carga en ${opcionElegida.nombre}.`}
+                </span>
               </div>
             )}
-
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
-              <div className="text-xs font-semibold uppercase tracking-wider text-blue-700">
-                Arbitraje Logístico
-              </div>
-              <p className="mt-2 text-lg font-bold text-slate-800">
-                💡 Adelantar zarpe al {fmtDiaCorto(mejorDia.fecha)}
-              </p>
-              <p className="mt-1 text-sm font-semibold text-emerald-700">
-                + {fmtUsd(ahorroArbitraje)} de ahorro frente al {fmtDiaSemana(peorDia.fecha)}
-              </p>
-            </div>
 
             <div className={`${CARD} p-5`}>
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-700">
                 <Route className="h-4 w-4" /> Simulador Top-off
               </div>
-              <p className="mt-2 text-sm font-semibold text-slate-800">
-                El buque carga parcialmente en el Gran Rosario y navega al sur para completar{' '}
-                {fmtTn(tnTopOff)} en el puerto elegido.
+              <div className="mt-3 rounded-lg bg-emerald-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Mejor opción</div>
+                <div className="mt-1 text-xl font-bold text-slate-800">
+                  {opcionMejor.id === 'no-desviar' ? 'No desviar' : `Top-off en ${opcionMejor.nombre}`}
+                </div>
+                <div className="mt-1 text-2xl font-bold text-emerald-700">
+                  {opcionMejor.id === 'no-desviar' ? 'Sin ahorro' : fmtUsdConSigno(opcionMejor.ahorroNeto)}
+                </div>
+                <div className="text-sm text-emerald-700">
+                  {opcionMejor.id === 'no-desviar' ? 'Ningún puerto compensa su costo' : 'de ahorro neto'}
+                </div>
+              </div>
+              <p className="mt-3 text-sm text-slate-700">
+                El buque carga parcialmente en el Gran Rosario y navega al sur para completar {fmtTn(tnTopOff)} en
+                el puerto elegido.
               </p>
-              <table className="mt-3 w-full text-left text-sm">
+              <table className="mt-2 w-full text-left text-sm">
                 <thead className="text-xs uppercase tracking-wider text-slate-600">
                   <tr className="border-b border-blue-200">
                     <th scope="col" className="py-1.5 pr-2">Opción</th>
                     <th scope="col" className="py-1.5 pr-2 text-right">Costo</th>
-                    <th scope="col" className="py-1.5 text-right">Ahorro neto</th>
+                    <th scope="col" className="whitespace-nowrap py-1.5 text-right">Ahorro neto</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -602,11 +614,11 @@ export default function App() {
                             </div>
                           )}
                         </td>
-                        <td className="py-2 pr-2 text-right align-top font-semibold text-red-700">
+                        <td className="whitespace-nowrap py-2 pr-2 text-right align-top font-semibold text-red-700">
                           {o.costo > 0 ? `-${fmtUsd(o.costo)}` : fmtUsd(0)}
                         </td>
                         <td
-                          className={`py-2 text-right align-top font-bold ${o.ahorroNeto < 0 ? 'text-red-700' : 'text-emerald-700'}`}
+                          className={`whitespace-nowrap py-2 text-right align-top font-bold ${o.ahorroNeto < 0 ? 'text-red-700' : 'text-emerald-700'}`}
                         >
                           {fmtUsdConSigno(o.ahorroNeto)}
                         </td>
@@ -615,22 +627,6 @@ export default function App() {
                   })}
                 </tbody>
               </table>
-              <ul className="mt-3 list-disc space-y-1 pl-4 text-xs text-slate-600">
-                <li>Costo = días extra de buque ({fmtUsd(COSTO_DIARIO_BUQUE_USD)} por día, demo) + premio del grano por tonelada completada.</li>
-                {PUERTOS_TOP_OFF.map((p) => (
-                  <li key={p.id}>
-                    {p.nombre}: {p.diasExtra} días extra (demo) y USD {p.premioUsdTn}/tn de premio del grano (
-                    {p.premioEsReferencia
-                      ? 'referencia: dentro del diferencial del maíz que observó Sio Granos sobre Gran Rosario, unos USD 32 a 40/tn en 2021 y 2022'
-                      : 'demo'}
-                    ).
-                  </li>
-                ))}
-                <li>Toneladas a completar y beneficio: las del peor día de la ventana de 72 hs.</li>
-                <li>Modelo: 2.200 tn perdidas por pie de calado faltante.</li>
-                <li>Panamax de referencia, 45.000 tn (supuesto del modelo; la BCR cita Panamax de 60.000 a 65.000 tn).</li>
-                <li>Calado de diseño del Panamax (supuesto): 34 ft; pies faltantes = 34 − calado seguro.</li>
-              </ul>
               <button
                 onClick={emitirDesvio}
                 disabled={ordenEmitida}
@@ -651,6 +647,37 @@ export default function App() {
                   </>
                 )}
               </button>
+              <div className="mt-5 border-t border-slate-200 pt-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Supuestos</h3>
+                <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-slate-600">
+                  <li>Costo = días extra de buque ({fmtUsd(COSTO_DIARIO_BUQUE_USD)} por día, demo) + premio del grano por tonelada completada.</li>
+                  {PUERTOS_TOP_OFF.map((p) => (
+                    <li key={p.id}>
+                      {p.nombre}: {p.diasExtra} días extra (demo) y USD {p.premioUsdTn}/tn de premio del grano (
+                      {p.premioEsReferencia
+                        ? 'referencia: dentro del diferencial del maíz que observó Sio Granos sobre Gran Rosario, unos USD 32 a 40/tn en 2021 y 2022'
+                        : 'demo'}
+                      ).
+                    </li>
+                  ))}
+                  <li>Toneladas a completar y beneficio: las del peor día de la ventana de 72 hs.</li>
+                  <li>Modelo: 2.200 tn perdidas por pie de calado faltante.</li>
+                  <li>Panamax de referencia, 45.000 tn (supuesto del modelo; la BCR cita Panamax de 60.000 a 65.000 tn).</li>
+                  <li>Calado de diseño del Panamax (supuesto): 34 ft; pies faltantes = 34 − calado seguro.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wider text-blue-700">
+                Arbitraje Logístico
+              </div>
+              <p className="mt-2 flex items-center gap-2 text-lg font-bold text-slate-800">
+                <Lightbulb className="h-5 w-5 shrink-0 text-blue-600" /> Adelantar zarpe al {fmtDiaCorto(mejorDia.fecha)}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-emerald-700">
+                + {fmtUsd(ahorroArbitraje)} de ahorro frente al {fmtDiaSemana(peorDia.fecha)}
+              </p>
             </div>
           </aside>
         </div>
