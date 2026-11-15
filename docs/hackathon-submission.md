@@ -51,9 +51,15 @@ These were taken from search result summaries, not from the full reports. Open t
 
 | Time | Content |
 |---|---|
-| 0:00–0:45 | Business: problem, solution, who. Voice over simple images. |
-| 0:45–1:45 | Real demo, screen recording of the golden path: enter IMO 9436000, today, chart, lucro cesante, top-off comparison, export CSV. |
-| 1:45–2:00 | Closing clip generated with the `brag` skill (`/brag`, 15–25 s by design), tone `polished` or `app-store`. |
+| 0:00–0:15 | Opening clip: the problem only (2,200 tn per foot of draft, USD 620 M in 2021). Generated with `/brag` and a free-form direction, `--duration 15`. |
+| 0:15–1:45 | MVP on screen: solution, who it is for, then the golden path: enter IMO 9436000, today, chart, lucro cesante, top-off comparison, export CSV. |
+| 1:45–2:00 | Closing clip generated with `/brag`, `--duration 15`, tone `polished` or `app-store`. |
+
+Decisions:
+
+- Opening via `/brag` (option A), not a custom Hyperframes composition. `/brag` requires one scene with the real UI, so the opening may end with a short UI glimpse. If it feels too product-centric and dilutes the problem, fall back to building it directly with Hyperframes.
+- Both clips are generated only after the UI is declared finished, because `/brag` recreates the UI from `App.jsx` and goes stale if the UI changes.
+- The two clips take ~30 s of the 120 s, leaving ~90 s for the MVP.
 
 Guardrails for the recording:
 
