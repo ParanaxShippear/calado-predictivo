@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   DollarSign,
   Download,
+  FileText,
   Radar,
   Route,
   Send,
@@ -320,7 +321,7 @@ function OrdenDesvio({
               <Linea signo="+" etiqueta="Lucro cesante evitado" valor={fmtUsd(dia.impacto_usd)} tono="text-emerald-700" />
               <Linea
                 signo="−"
-                etiqueta={`Días extra de buque (${opcion.diasExtra})`}
+                etiqueta={`Días extra de buque (${opcion.diasExtra.toLocaleString('es-AR')})`}
                 valor={fmtUsd(opcion.costoDias)}
                 tono="text-red-700"
               />
@@ -387,6 +388,250 @@ function OrdenDesvio({
   )
 }
 
+// Lector de cotizaciones: la IA solo lee el documento; el usuario confirma cada valor.
+// Rangos de los valores (iguales a los del backend): [mínimo, máximo, el mínimo es válido].
+const CAMPOS_LECTOR = [
+  {
+    id: 'costoDiario',
+    etiqueta: 'Costo diario del buque (USD)',
+    rango: [5_000, 200_000, true],
+    dato: (l) => l.costo_diario_buque_usd,
+  },
+  ...PUERTOS_TOP_OFF.flatMap((p) => [
+    {
+      id: `${p.id}.diasExtra`,
+      puerto: p.nombre,
+      etiqueta: 'Días extra de buque',
+      rango: [0, 30, false],
+      dato: (l) => l.puertos[p.id].dias_extra,
+    },
+    {
+      id: `${p.id}.premioUsdTn`,
+      puerto: p.nombre,
+      etiqueta: 'Premio del grano (USD/tn)',
+      rango: [0, 200, true],
+      dato: (l) => l.puertos[p.id].premio_usd_tn,
+    },
+  ]),
+]
+
+const MOTIVOS_LECTOR = {
+  sin_sdk: 'falta instalar el SDK de IA',
+  sin_clave: 'no hay clave de API configurada',
+  timeout: 'la IA tardó demasiado',
+  sin_conexion: 'sin conexión con el servicio de IA',
+  error_api: 'el servicio de IA devolvió un error',
+  rechazo: 'la IA rechazó el documento',
+  respuesta_invalida: 'la respuesta de la IA no fue válida',
+  sin_servicio: 'no pudimos conectar con el servicio',
+}
+
+const DATO_VACIO = { valor: null, cita: null, cita_verificada: false }
+const PUERTO_VACIO = { dias_extra: DATO_VACIO, premio_usd_tn: DATO_VACIO }
+// Lectura vacía para cuando ni siquiera se pudo llamar al servicio.
+const LECTURA_SIN_SERVICIO = {
+  origen: 'sin_ia',
+  modelo: null,
+  motivo: 'sin_servicio',
+  es_cotizacion: false,
+  costo_diario_buque_usd: DATO_VACIO,
+  puertos: Object.fromEntries(PUERTOS_TOP_OFF.map((p) => [p.id, PUERTO_VACIO])),
+  advertencias: [],
+}
+
+const fueraDeRango = (campo, texto) => {
+  if (texto === '') return false
+  const n = Number(texto)
+  const [min, max, incluyeMin] = campo.rango
+  return !(Number.isFinite(n) && (incluyeMin ? n >= min : n > min) && n <= max)
+}
+
+function LectorCotizacion({ deshabilitado, onAplicar }) {
+  const [ejemplos, setEjemplos] = useState([])
+  const [texto, setTexto] = useState('')
+  const [leyendo, setLeyendo] = useState(false)
+  const [lectura, setLectura] = useState(null)
+  const [valores, setValores] = useState({})
+
+  useEffect(() => {
+    fetch(`${API_BASE}/cotizaciones-ejemplo`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setEjemplos)
+      .catch(() => {})
+  }, [])
+
+  function cargarLectura(l) {
+    setLectura(l)
+    setValores(Object.fromEntries(CAMPOS_LECTOR.map((c) => [c.id, c.dato(l).valor?.toString() ?? ''])))
+  }
+
+  async function leer() {
+    setLeyendo(true)
+    try {
+      const r = await fetch(`${API_BASE}/leer-cotizacion`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto }),
+        signal: AbortSignal.timeout(15000),
+      })
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      cargarLectura(await r.json())
+    } catch {
+      cargarLectura(LECTURA_SIN_SERVICIO)
+    } finally {
+      setLeyendo(false)
+    }
+  }
+
+  const numero = (id) => (valores[id] === '' ? null : Number(valores[id]))
+  const hayValor = CAMPOS_LECTOR.some((c) => valores[c.id] !== '')
+  const hayFueraDeRango = CAMPOS_LECTOR.some((c) => fueraDeRango(c, valores[c.id]))
+
+  function aplicar() {
+    // 'ia' solo si los cinco valores aplicados son exactamente los que devolvió Claude.
+    const sinEditar = lectura.origen === 'ia' && CAMPOS_LECTOR.every((c) => numero(c.id) === c.dato(lectura).valor)
+    onAplicar({
+      origen: sinEditar ? 'ia' : 'usuario',
+      costoDiario: numero('costoDiario'),
+      puertos: Object.fromEntries(
+        PUERTOS_TOP_OFF.map((p) => [
+          p.id,
+          { diasExtra: numero(`${p.id}.diasExtra`), premioUsdTn: numero(`${p.id}.premioUsdTn`) },
+        ]),
+      ),
+    })
+    setLectura(null)
+  }
+
+  const origenTexto = lectura && {
+    ia: `Leído por IA (modelo ${lectura.modelo}). Revisá cada valor antes de aplicarlo.`,
+    precargado: `Lectura precargada: en este intento no se usó IA (${MOTIVOS_LECTOR[lectura.motivo]}).`,
+    sin_ia: `No se pudo leer con IA (${MOTIVOS_LECTOR[lectura.motivo]}). Cargá los valores a mano.`,
+  }[lectura.origen]
+
+  const campo = (c) => {
+    const d = lectura ? c.dato(lectura) : DATO_VACIO
+    const invalido = fueraDeRango(c, valores[c.id])
+    return (
+      <div key={c.id}>
+        <label htmlFor={`lector-${c.id}`} className="text-xs font-medium text-slate-600">
+          {c.etiqueta}
+        </label>
+        <input
+          id={`lector-${c.id}`}
+          type="number"
+          step="any"
+          value={valores[c.id] ?? ''}
+          onChange={(e) => setValores({ ...valores, [c.id]: e.target.value })}
+          aria-invalid={invalido ? 'true' : undefined}
+          className="mt-1 min-h-11 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+        />
+        {invalido && <p className="mt-1 text-xs font-medium text-red-700">Valor fuera de rango.</p>}
+        {d.cita && <p className="mt-1 text-xs text-slate-600">Según el documento: &quot;{d.cita}&quot;</p>}
+        {d.valor !== null && !d.cita_verificada && (
+          <p className="mt-1 text-xs font-medium text-amber-700">
+            No encontramos esta cita en el documento: revisá el valor.
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <fieldset disabled={deshabilitado} className="mt-5 min-w-0 border-t border-blue-100 pt-4">
+      <legend className="sr-only">Leer una cotización con IA</legend>
+      <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-700">
+        <FileText className="h-4 w-4" /> Leer una cotización con IA
+      </h3>
+      <p className="mt-1 text-xs text-slate-600">
+        Pegá el mail de la agencia marítima o el recap del broker. La IA propone los costos y vos los confirmás.
+      </p>
+
+      {ejemplos.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-xs text-slate-600">Documentos de ejemplo (ficticios):</span>
+          {ejemplos.map((e) => (
+            <button
+              key={e.id}
+              type="button"
+              onClick={() => setTexto(e.texto)}
+              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-600"
+            >
+              {e.titulo}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <label htmlFor="lector-texto" className="mt-3 block text-xs font-medium text-slate-600">
+        Documento
+      </label>
+      <textarea
+        id="lector-texto"
+        rows={6}
+        maxLength={8000}
+        value={texto}
+        onChange={(e) => setTexto(e.target.value)}
+        className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+      />
+      <button
+        type="button"
+        onClick={leer}
+        disabled={leyendo || !texto.trim()}
+        className="mt-2 min-h-11 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600"
+      >
+        {leyendo ? 'Leyendo…' : 'Leer con IA'}
+      </button>
+
+      {lectura && (
+        <div className="mt-4 space-y-3 rounded-lg bg-slate-50 p-4">
+          <div role="status" className="space-y-1 text-sm font-medium text-slate-800">
+            <p>{origenTexto}</p>
+            {lectura.origen === 'ia' && !lectura.es_cotizacion && (
+              <p>La IA no encontró costos de top-off en este documento.</p>
+            )}
+          </div>
+          {lectura.advertencias.map((a) => (
+            <p key={a} className="text-xs font-medium text-amber-700">
+              {a}
+            </p>
+          ))}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="sm:col-span-2 sm:max-w-xs">{campo(CAMPOS_LECTOR[0])}</div>
+            {PUERTOS_TOP_OFF.map((p) => (
+              <div key={p.id} className="space-y-3">
+                <h4 className="text-sm font-semibold text-slate-800">{p.nombre}</h4>
+                {CAMPOS_LECTOR.filter((c) => c.puerto === p.nombre).map(campo)}
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={aplicar}
+              disabled={!hayValor || hayFueraDeRango}
+              className="min-h-11 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-600"
+            >
+              Aplicar a la comparación
+            </button>
+            <button
+              type="button"
+              onClick={() => setLectura(null)}
+              className="min-h-11 rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+            >
+              Descartar
+            </button>
+          </div>
+        </div>
+      )}
+
+      <p className="mt-3 text-xs text-slate-600">
+        La IA solo lee el documento. El costo y el ahorro neto se calculan con una fórmula fija.
+      </p>
+    </fieldset>
+  )
+}
+
 export default function App() {
   const [fecha, setFecha] = useState(hoyISO)
   const [data, setData] = useState(null)
@@ -397,6 +642,8 @@ export default function App() {
   // null = se usa la mejor opción; vuelve a null al cambiar la fecha o el buque.
   const [seleccionId, setSeleccionId] = useState(null)
   const [emitidaEn, setEmitidaEn] = useState(null)
+  // null = costos DEMO; si no, los de una cotización confirmada por el usuario (ver LectorCotizacion).
+  const [costosCotizacion, setCostosCotizacion] = useState(null)
 
   const [imoInput, setImoInput] = useState('')
   const [buque, setBuque] = useState(null)
@@ -460,7 +707,15 @@ export default function App() {
     }
   }
 
+  // Aplicar o descartar costos de cotización cambia la mejor opción: se vuelve a preseleccionar y se anula la orden.
+  function fijarCostosCotizacion(costos) {
+    setCostosCotizacion(costos)
+    setOrdenEmitida(false)
+    setSeleccionId(null)
+  }
+
   function desvincularAis() {
+    setCostosCotizacion(null)
     setBuque(null)
     setData(null)
     setError(null)
@@ -572,10 +827,16 @@ export default function App() {
   const tnTopOff = peorDia.tonelaje_no_cargado_tn
   const opcionesTopOff = [
     ...PUERTOS_TOP_OFF.map((p) => {
-      const costoDias = p.diasExtra * COSTO_DIARIO_BUQUE_USD
-      const costoPremio = p.premioUsdTn * tnTopOff
+      // Cada valor sale de la cotización aplicada y, si esa no lo trae, de la constante DEMO.
+      const cot = costosCotizacion?.puertos[p.id]
+      const diasExtra = cot?.diasExtra ?? p.diasExtra
+      const premioUsdTn = cot?.premioUsdTn ?? p.premioUsdTn
+      const costoDiario = costosCotizacion?.costoDiario ?? COSTO_DIARIO_BUQUE_USD
+      const segunCotizacion = [cot?.diasExtra, cot?.premioUsdTn, costosCotizacion?.costoDiario].some((v) => v != null)
+      const costoDias = diasExtra * costoDiario
+      const costoPremio = premioUsdTn * tnTopOff
       const costo = costoDias + costoPremio
-      return { ...p, costoDias, costoPremio, costo, ahorroNeto: peorDia.impacto_usd - costo }
+      return { ...p, diasExtra, premioUsdTn, segunCotizacion, costoDias, costoPremio, costo, ahorroNeto: peorDia.impacto_usd - costo }
     }),
     { id: 'no-desviar', nombre: 'No desviar', costo: 0, ahorroNeto: 0 },
   ]
@@ -818,6 +1079,12 @@ export default function App() {
                           {esMejor && (
                             <span className="text-xs font-semibold text-emerald-700">Mejor opción</span>
                           )}
+                          {o.segunCotizacion && (
+                            <>
+                              {' '}
+                              <span className="ml-1 text-xs font-semibold text-blue-700">Según cotización</span>
+                            </>
+                          )}
                         </td>
                         <td className="whitespace-nowrap py-2 pr-2 text-right align-top font-semibold text-red-700">
                           {o.costo > 0 ? `-${fmtUsd(o.costo)}` : fmtUsd(0)}
@@ -835,6 +1102,17 @@ export default function App() {
               <p className="mt-3 text-xs text-slate-600">
                 Elegí una opción y emití la orden desde el documento.
               </p>
+              {costosCotizacion && (
+                <button
+                  type="button"
+                  onClick={() => fijarCostosCotizacion(null)}
+                  disabled={ordenEmitida}
+                  className="mt-2 min-h-11 text-xs font-semibold text-blue-700 underline-offset-2 hover:underline disabled:cursor-not-allowed disabled:text-slate-600 disabled:no-underline"
+                >
+                  Volver a los costos demo
+                </button>
+              )}
+              <LectorCotizacion deshabilitado={ordenEmitida} onAplicar={fijarCostosCotizacion} />
             </div>
           </div>
 
