@@ -249,6 +249,7 @@ function OrdenDesvio({
   onEmitir,
   onDescargar,
   descargado,
+  origenCostos,
 }) {
   const desvia = opcion.id !== 'no-desviar'
   const emitida = emitidaEn !== null
@@ -383,6 +384,12 @@ function OrdenDesvio({
           </button>
         )}
         <div>Documento generado por Paranax con datos simulados.</div>
+        {origenCostos === 'ia' && (
+          <div>Costos del top-off tomados de una cotización leída por IA y confirmada por el usuario.</div>
+        )}
+        {origenCostos === 'usuario' && (
+          <div>Costos del top-off cargados por el usuario a partir de una cotización.</div>
+        )}
       </div>
     </article>
   )
@@ -1129,6 +1136,7 @@ export default function App() {
               onEmitir={emitirDesvio}
               onDescargar={exportarReporte}
               descargado={exportado}
+              origenCostos={costosCotizacion?.origen}
             />
           </aside>
         </div>

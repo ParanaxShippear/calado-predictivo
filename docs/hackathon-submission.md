@@ -2,6 +2,8 @@
 
 Answers entered in the "Proyecto" form (as of 2026-10-24) plus the decisions behind them and the video plan. If the form and this file differ, update this file first.
 
+> Aleph Hackathon Rosario (2026-11-28): the tracks were not announced as of 2026-11-15. The "Track" answer and the AI answer below must be rewritten once they are. The other form answers are from the previous event (2026-10-24, track "Finanzas").
+
 ## Form answers (verbatim, Spanish)
 
 **Nombre del equipo:** ParanaLove
@@ -24,14 +26,15 @@ Cerca del 75% de las exportaciones argentinas de granos, harinas y aceites sale 
 Las bajantes extremas del Paraná siempre fueron recurrentes y además se ha comprobado que en los últimos años el nivel del río se ha vuelto más variable e impredecible debido a fenómenos climáticos. A pesar de todo esto la decisión sigue siendo manual. Los datos públicos (INA, BCR) y los modelos de proyección ya son accesibles para automatizar esa decisión.
 
 **¿Qué función cumple la AI en tu proyecto y cómo agrega valor?**
-Un modelo proyecta la altura del río a 72 hs y recomienda fecha de zarpe y puerto de top-off para minimizar el lucro cesante. En esta demo la proyección es simulada y las reglas del modelo son determinísticas. El siguiente paso es reemplazarla por un modelo entrenado con series históricas del INA. La razón de esta decisión es que estamos haciendo un MVP con tiempo limitado en una hackatón.
+La IA (Claude, de Anthropic) lee las cotizaciones de top-off que hoy llegan por mail, de la agencia marítima o del broker, y propone los costos de cada puerto mostrando la frase de la que sacó cada número. El usuario los confirma y la comparación se recalcula. La cuenta es una fórmula fija: la IA no decide ni proyecta. En esta demo los documentos son de ejemplo y la proyección del río es simulada.
 
 ## Decisions
 
 - **Product name: Paranax** (team name: ParanaLove). Set by the owner on 2026-10-24; the form answers above do not name the product.
 - **Date arbitrage is no longer in the product.** The owner removed the "Arbitraje Logístico" block on 2026-10-24. The form answer "recomienda fecha de zarpe y puerto de top-off" (AI question) no longer matches: the product recommends the top-off port and shows the order. Update the form or that sentence before submitting.
 - **Track: Finanzas.** The repo frames the product as an agro-fintech command center (lucro cesante in USD, top-off cost comparison).
-- **AI answer is deliberately honest.** `AGENTS.md` puts ML/LLM out of scope and forbids claiming an AI model is live. The projection is simulated and the model rules are deterministic; the form says so.
+- **AI answer says exactly what the AI does.** Claude reads a pasted cotización and proposes five cost inputs with the sentence behind each; the user confirms them; cost and ahorro neto are a fixed formula. The river projection is still simulated and the sample documents are fictional. `AGENTS.md` requires the UI and the pitch to say what is AI-driven, what is a deterministic model and what is simulated data.
+- **That costs arrive as an email or a recap is the team's reading of the business**, not verified with an exporter. Say "documento de ejemplo" in the pitch.
 - **Market size uses only sourced figures.** The number of exporting companies was not found in any source, so it is not claimed. Figures are cited with their source below.
 - **"Por qué ahora" climate claim.** The sentence "el nivel del río se ha vuelto más variable e impredecible debido a fenómenos climáticos" is the team's wording and has no source in this repo. Add one before defending it in front of the jury.
 
@@ -64,7 +67,8 @@ Decisions:
 Guardrails for the recording:
 
 - Say "datos simulados" out loud during the demo. The badge is already in the UI.
-- Do not say "AI en vivo" or "predicción con machine learning". The projection is simulated.
+- Say what the AI does in one sentence: "la IA lee la cotización y propone los costos; la cuenta es fija". The river projection is simulated: describe it as simulated, never as an AI or machine-learning forecast.
+- If the label on screen says "Lectura precargada", say so out loud.
 - Record with the backend already running, to avoid the scraping timeout on camera.
 
 The `brag` skill is installed in `.agents/skills/brag`. It runs `npx hyperframes ...`, which downloads and executes a third-party package. Its `SKILL.md`, references and script were reviewed on 2026-10-24; the Hyperframes package itself was not.

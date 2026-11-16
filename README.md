@@ -43,7 +43,9 @@ El costo del top-off tiene dos componentes: los días extra de buque (días por 
 | Precio de la soja (BCR) | Scraping con selector provisorio | Usa el valor por defecto de USD 400/tn. El indicador queda en amarillo (`simulado`). |
 | Días previos y proyección | Simulados alrededor de la altura de hoy | Demo |
 | Buques (AIS) | Base fija de 3 buques en `api/main.py` | Demo. Nunca se muestra como en vivo. |
-| Costos del top-off | Constantes en el frontend | Demo. La excepción es el premio del grano en Bahía Blanca (USD 34/tn), que se rotula "referencia": está dentro del diferencial de precio del maíz que observó Sio Granos sobre Gran Rosario (unos USD 32 a 40/tn en 2021 y 2022). Los días extra y todos los valores de Quequén son demo. |
+| Costos del top-off | Constantes en el frontend | Demo. La excepción es el premio del grano en Bahía Blanca (USD 34/tn), que se rotula "referencia": está dentro del diferencial de precio del maíz que observó Sio Granos sobre Gran Rosario (unos USD 32 a 40/tn en 2021 y 2022). Los días extra y todos los valores de Quequén son demo. Una cotización confirmada por el usuario los reemplaza en pantalla. |
+| Lectura de cotizaciones | IA (Claude, API de Anthropic). Sin clave, sin red o si la llamada tarda más de 10 s, se usa una lectura precargada o la carga manual. | Real cuando la etiqueta dice "Leído por IA". La IA solo lee el documento y propone valores; el costo y el ahorro neto se calculan con una fórmula fija. |
+| Documentos de ejemplo del lector | Constantes en `api/main.py` | Demo. Son ficticios y la interfaz lo indica. |
 | Número de orden de desvío | Constante en el frontend | Demo |
 
 La orden de desvío se muestra como un documento de ejemplo dirigido a la agencia marítima (número de orden, buque, instrucción, costo y ahorro estimados), solo en pantalla: no se envía ni se guarda en ningún sistema.
@@ -66,8 +68,9 @@ Incluido en la demo:
 - Un indicador AIS que no se muestra en verde.
 - Comparación de Bahía Blanca y Quequén, con una fila "no desviar".
 - Una etiqueta de "escenario crítico".
+- Un lector de cotizaciones con IA para los costos del top-off.
 
-Fuera de alcance: scraping real, modelos de ML o LLM, AIS en vivo, vista para la agencia marítima y tests.
+Fuera de alcance: scraping real, modelos de pronóstico (la proyección del río sigue simulada), un asistente de chat, AIS en vivo, vista para la agencia marítima y tests.
 
 El flujo principal es: ingresar el IMO, hoy, gráfico, lucro cesante, comparación de puertos, orden de desvío, descargar el anexo en CSV. La interfaz no muestra datos ni cifras hasta que se ingresa un IMO; la demo usa `9436000` (Panamax).
 
@@ -153,6 +156,6 @@ La primera consulta de cada 5 minutos puede demorar unos segundos mientras vence
 
 ## Estado actual
 
-El alcance descripto arriba está implementado en el frontend. La especificación y los tickets están en `.scratch/top-off-demo/`, y el ensayo del flujo completo, con los resultados observados, en `.scratch/top-off-demo/issues/04-ensayo-del-demo.md`.
+El alcance descripto arriba está implementado en el frontend. La especificación y los tickets están en `.scratch/top-off-demo/`, y el ensayo del flujo completo, con los resultados observados, en `.scratch/top-off-demo/issues/04-ensayo-del-demo.md`. La especificación, los tickets y el ensayo del lector de cotizaciones están en `.scratch/ai-hackathon/`.
 
 Pendiente: confirmar a mano, en un navegador con ventana, que la descarga del CSV guarda el archivo. El contenido se verificó, pero la descarga a disco no se pudo observar en el ensayo automatizado.
