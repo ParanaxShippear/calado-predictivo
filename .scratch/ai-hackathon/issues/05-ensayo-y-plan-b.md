@@ -59,4 +59,22 @@ After the event (human): remove the key from Vercel and revoke it in the Console
 
 ## Resultados observados
 
-(pending)
+Observed on 2026-11-16 by the agent, on the owner's laptop: local API with the key set by the owner, client on Vite, commit `b16c152`. The (human) steps and the Vercel check were not run.
+
+- `cd client && npm run lint && npm run build`: both pass. Lint prints one warning (`react(set-state-in-effect)`, `src/App.jsx:666`); the build prints the chunk-size warning.
+- No key (second API on port 8001, started in a shell without the variable): three `OK` lines, `origen=precargado`, `motivo=sin_clave`, `llamadas=3 mediana=0.0s max=0.0s fallas=0`.
+- With the key, `python .scratch/ai-hackathon/probar_lector.py http://localhost:8000/api 5`: fifteen `OK` lines, `origen=ia`, `modelo=claude-sonnet-5-5`, `citas_sin_verificar=0`. Last line: `llamadas=15 mediana=5.3s max=6.4s fallas=0`.
+- **Finding, latency bar.** Expected: median at most 4 s and max at most 8 s. Obtained: median 5.3 s (over the bar), max 6.4 s (within it). About 2.1 s of each call is not the API: on this machine `urllib` takes 2.09 s to reach `localhost` and 0.00 s to reach `127.0.0.1` (measured on `GET /api/cotizaciones-ejemplo`). One round against `http://127.0.0.1:8000/api` gave `llamadas=3 mediana=3.4s max=3.5s fallas=0`. In the browser, from "Leer con IA" to the proposal on screen: 3.7 s (recap), 3.3 s (agencia), 2.7 s (no cotización). Three samples each way are too few to call the bar met; the decision between Claude Haiku 5.5 and narrating the wait stays with the owner.
+- UI with the key, IMO `9436000`:
+  - No cotización applied: Bahía Blanca -USD 652.200 / +USD 4.667.800 ("Mejor opción"); Quequén -USD 665.400 / +USD 4.654.600; No desviar USD 0 / +USD 0.
+  - "Cotización de agencia: Quequén" applied: Bahía Blanca -USD 652.200 / +USD 4.667.800; Quequén -USD 558.900 / +USD 4.761.100 ("Mejor opción", "Según cotización").
+  - "Recap del broker" applied: Bahía Blanca -USD 691.300 / +USD 4.628.700; Quequén -USD 675.400 / +USD 4.644.600 ("Mejor opción"); both rows "Según cotización".
+  - All match spec D9. The label read "Leído por IA (modelo claude-sonnet-5-5). Revisá cada valor antes de aplicarlo." and the order footer added "Costos del top-off tomados de una cotización leída por IA y confirmada por el usuario."
+- "Documento que no es una cotización": showed "La IA no encontró costos de top-off en este documento."
+- A document that is not a sample, written on the spot (6 días and USD 41 for Bahía Blanca, costo diario USD 19.500): the reading returned 19500, 6 and 41, each with its cita from the text, and left Quequén empty. Label "Leído por IA".
+- No key, UI (client pointed at the keyless API): the sample "Cotización de agencia: Quequén" answered with "Lectura precargada: en este intento no se usó IA (no hay clave de API configurada)." and the same numbers (Quequén -USD 558.900 / +USD 4.761.100). The order footer read "Costos del top-off cargados por el usuario a partir de una cotización."
+- Order footer, other cases: with the DEMO costs only "Documento generado por Paranax con datos simulados."; after editing Quequén's días to 4 on a reading from Claude, the "cargados por el usuario" line; after "Volver a los costos demo", the first case again.
+- Golden path: order issued and "Descargar (CSV)" pressed; the button changed to "Archivo descargado ✓" and the generated CSV had the header plus three rows with buque and IMO. The file on disk was not observed (still a (human) step).
+- `git grep -n "sk-ant" -- .`: the only matches are the two ticket lines that quote this command. `git status --short` shows no `.env`.
+- Not run: the Vercel check, network off with the key, the CSV saved to disk, the screen recording, the warm-up, and the timeout path of ticket 03 with the real client (see that ticket).
+- The UI was driven with scripted clicks in a hidden browser pane, not looked at: layout and visual states were not checked in this rehearsal.

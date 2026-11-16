@@ -58,3 +58,15 @@ git grep -n "sk-ant" -- . ; git status --short
 Expected: no match, and no `.env` file among the changes.
 
 UI (with ticket 02 in place and the key set): read the sample "Cotización de agencia: Quequén". The label reads "Leído por IA (modelo claude-sonnet-5-5). Revisá cada valor antes de aplicarlo." and applying it gives the numbers of spec D9. Golden path through the CSV download still works.
+
+## Resultados observados
+
+Observed on 2026-11-16, local API with the key set by the owner, `anthropic` 2.8.0.
+
+- No key: `python .scratch/ai-hackathon/probar_lector.py` printed three `OK` lines, `origen=precargado`, `motivo=sin_clave`, `fallas=0`.
+- With the key: `python .scratch/ai-hackathon/probar_lector.py http://localhost:8000/api 3` printed nine `OK` lines, `origen=ia`, `modelo=claude-sonnet-5-5`, `citas_sin_verificar=0`. Last line: `llamadas=9 mediana=4.6s max=7.3s fallas=0`. The first real call did not return a 400.
+- Latency note: on this machine every call the script makes to `localhost` carries about 2.1 s that is not the API (a `GET /api/cotizaciones-ejemplo` took 2.09 s through `localhost` and 0.00 s through `127.0.0.1` with `urllib`). The browser does not pay it: see ticket 05.
+- Timeout path with `IA_TIMEOUT_S = 0.001`: not run. uvicorn runs in the owner's shell (the only one with the key) and the check needs two restarts there. The `APITimeoutError` branch was exercised with a mocked client: `origen=precargado`, `motivo=timeout`.
+- SDK-missing path: not run in a virtual environment. Exercised by forcing the import to fail in a throwaway script: `motivo=sin_sdk` and `GET /api/buque/9436000` answered 200.
+- Secrets: `git grep -n "sk-ant" -- .` matches only the two ticket lines that quote the command itself; `git status --short` shows no `.env`.
+- UI: the sample "Cotización de agencia: Quequén" showed "Leído por IA (modelo claude-sonnet-5-5). Revisá cada valor antes de aplicarlo." Applied: Bahía Blanca -USD 652.200 / +USD 4.667.800; Quequén -USD 558.900 / +USD 4.761.100, "Mejor opción", "Según cotización". They match spec D9.
