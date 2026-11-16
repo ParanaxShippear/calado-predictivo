@@ -93,6 +93,8 @@ Stack: Python 3, FastAPI, Uvicorn, Requests y BeautifulSoup en el backend; React
 | `GET /api/pronostico-calado?fecha=YYYY-MM-DD` | Igual, para otra fecha de análisis. Máximo 7 días a futuro. |
 | `GET /api/pronostico-calado?imo=9436000` | Recalcula con la capacidad del buque indicado. Se puede combinar con `fecha`. |
 | `GET /api/buque/{imo}` | Datos del buque (AIS simulado). |
+| `GET /api/cotizaciones-ejemplo` | Los tres documentos de ejemplo (ficticios) del lector de cotizaciones. |
+| `POST /api/leer-cotizacion` | Lee un documento (`{"texto": "..."}`) y devuelve los cinco costos del top-off con su cita y su origen. |
 
 ### IMO de prueba
 

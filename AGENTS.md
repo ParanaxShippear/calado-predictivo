@@ -1,9 +1,9 @@
 # Paranax (repo: calado-predictivo)
 
-Agro-fintech command center. Projects the Paraná river height at Rosario, derives the safe draft of a Panamax vessel, and quantifies lost tonnage and lucro cesante in USD. Recommends a top-off port (Bahía Blanca or Quequén) and shows the resulting order of diversion as a document. Hackathon MVP (4 h build): the pitch is the product.
+Agro-fintech command center. Projects the Paraná river height at Rosario, derives the safe draft of a Panamax vessel, and quantifies lost tonnage and lucro cesante in USD. Recommends a top-off port (Bahía Blanca or Quequén) and shows the resulting order of diversion as a document. A Claude-powered lector de cotizaciones reads a pasted quote and proposes the top-off costs; the user confirms them. Hackathon MVP: the pitch is the product.
 
 ## Layout
-- `api/main.py`: single-file FastAPI app (scraping, vessel DB, draft model, endpoints).
+- `api/main.py`: single-file FastAPI app (scraping, vessel DB, draft model, lector de cotizaciones, endpoints).
 - `client/src/App.jsx`: single-file React UI (Vite + Tailwind 4 + Recharts + Lucide).
 - No test suite exists.
 
@@ -12,7 +12,8 @@ Agro-fintech command center. Projects the Paraná river height at Rosario, deriv
 - Client: `cd client && npm install && npm run dev`
 - Verify client: `cd client && npm run lint && npm run build`
 - Verify API: run it, then `curl localhost:8000/api/pronostico-calado`.
-- `API_BASE` in `App.jsx` is hardcoded to `http://localhost:8000/api`. The demo runs locally unless that is changed.
+- `API_BASE` in `App.jsx` comes from `VITE_API_BASE`; without it, `http://localhost:8000/api` in dev and `/api` in production (Vercel).
+- Verify the lector: with the API running, `python .scratch/ai-hackathon/probar_lector.py`.
 - API contract and use cases: see README. Do not duplicate them here.
 
 ## Domain terms (use verbatim, never rename or translate)
@@ -23,9 +24,16 @@ Demo data is allowed. Unlabeled demo data is not.
 - While any source is simulated, the UI shows one visible "datos simulados" badge.
 - AIS is always simulated (hardcoded `BUQUES`): never show it as live.
 - The UI does not list the model assumptions or the top-off cost sources (owner decision, 2026-10-24: the client is not interested). The "datos simulados" badge covers the simulated figures, and this file stays the single source for them.
-- Demo values today (inline, keep them as named constants marked `DEMO`): previous days and projection (`altura_para`, `DELTAS_PROYECCION_M`), `BUQUES`, top-off port costs (extra vessel days + grain premium at the completion port), the order number.
+- Demo values today (inline, keep them as named constants marked `DEMO`): previous days and projection (`altura_para`, `DELTAS_PROYECCION_M`), `BUQUES`, top-off port costs (extra vessel days + grain premium at the completion port), the order number, the sample cotizaciones and their stored readings.
 - Real sources attempted: river height (INA) and soy price (BCR) via scraping. Selectors are placeholders; on failure use the fallback and the `simulado` state (yellow indicator).
 - Model assumptions: 2,200 tn per foot of draft, 45,000 tn base load (model assumption, not verified: BCR cites Panamax of 60,000-65,000 tn), 34 ft Panamax design draft needed for the full load (`calado_diseno_pies`; model assumption, not verified; unrelated to Buenos Aires' 34 ft and to the 34 ft guaranteed channel draft cited by BCR), 6.0 m channel depth offset (`OFFSET_CANAL_M`), 0.6 m under-keel clearance (`UKC_M`). Safe draft = (river height + 6.0 - 0.6) m converted to feet. Changing one means updating it here (single source).
+
+## AI (lector de cotizaciones)
+- Claude reads the document and proposes five values; the user confirms them; cost and ahorro neto stay the fixed formula. Describe it that way in the UI and in the pitch.
+- Every reading shows its origin: `ia` (with the model that answered), `precargado` or `sin_ia`. A fallback keeps its own label.
+- The sample documents are fictional and the UI says so.
+- The request shape, the model and the limits are pinned in `.scratch/ai-hackathon/spec.md`; the values are named constants in `api/main.py`.
+- The key comes only from the `ANTHROPIC_API_KEY` environment variable. Without it the lector answers with its fallback.
 
 ## Top-off mechanic
 The vessel loads partially at Gran Rosario and sails south to complete its cargo at the port. Never state or imply that the cargo travels by train from Rosario: no source supports it.
@@ -41,10 +49,10 @@ The vessel loads partially at Gran Rosario and sails south to complete its cargo
 - Never read or write `.env`, keys or credentials. Every external call gets a timeout and a fallback.
 
 ## Hackathon constraints
-- Scope is closed. IN: the existing dashboard, a "datos simulados" badge, an AIS indicator that never shows green, a top-off port comparison (Bahía Blanca, Quequén) with demo costs, a "no desviar" row, a "escenario crítico" label, rehearsal. UI improvements approved by the owner on 2026-10-24 (accessibility, es-AR number formats, decision hierarchy, an on-screen order document addressed to the agencia marítima; see `.scratch/ui-improvements/spec.md`). OUT: real scraping, ML/LLM, live AIS, agencia view, tests, README roadmap. If a request is not IN, say no.
-- Top-off implementation: frontend constants only (2 ports, demo costs, 2 cost components). No new endpoint, no API table, no extra cost components.
+- Scope is closed. IN: the existing dashboard, a "datos simulados" badge, an AIS indicator that never shows green, a top-off port comparison (Bahía Blanca, Quequén) with demo costs, a "no desviar" row, a "escenario crítico" label, rehearsal. UI improvements approved by the owner on 2026-10-24 (accessibility, es-AR number formats, decision hierarchy, an on-screen order document addressed to the agencia marítima; see `.scratch/ui-improvements/spec.md`). Added by the owner on 2026-11-13 for the Aleph Hackathon Rosario: ML/LLM, starting with the lector de cotizaciones (`.scratch/ai-hackathon/spec.md`), and the `anthropic` Python SDK. OUT: real scraping, live AIS, agencia view, tests, README roadmap, any other new dependency. If a request is not IN, say no.
+- Top-off implementation: the port costs are frontend constants marked `DEMO` (2 ports, 2 cost components). A cotización confirmed by the user overrides them on screen. No API table, no extra cost components.
 - Primary persona: the agroexportadora. Golden path: enter IMO -> today -> chart -> lucro cesante -> top-off port comparison -> order of diversion -> download the CSV annex. Must work on every commit.
 - The UI shows no data or numbers until an IMO is linked (owner decision, 2026-10-24): the first screen asks for the IMO. The demo uses IMO `9436000` (Agro Pioneer, Panamax). The API still falls back to the Panamax when `imo` is omitted.
-- Never claim INA/BCR data or an AI model is live.
+- The UI and the pitch say what is AI-driven, what is a deterministic model and what is simulated data. Present INA/BCR data or a forecast model as live or real only when it is.
 - If a task exceeds 30 min without closing, stop and report options.
 - UI copy in Spanish.

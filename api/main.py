@@ -9,6 +9,7 @@ import requests
 from bs4 import BeautifulSoup
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 app = FastAPI(title="Paranax - Gran Rosario")
 
@@ -237,3 +238,165 @@ def pronostico_calado(fecha: date | None = None, imo: str | None = None):
             "lucro_cesante_72hs_usd": max(p["impacto_usd"] for p in ventana),
         },
     }
+
+
+# --- Lector de cotizaciones -------------------------------------------------------
+COTIZACION_MAX_CHARS = 8_000
+
+# Rango válido de cada valor (S6): (mínimo, máximo, el mínimo es válido).
+RANGOS = {
+    "dias_extra": (0, 30, False),
+    "premio_usd_tn": (0, 200, True),
+    "costo_diario_buque_usd": (5_000, 200_000, True),
+}
+
+_NULO = {"valor": None, "cita": None}
+_PUERTO_NULO = {"dias_extra": _NULO, "premio_usd_tn": _NULO}
+
+# DEMO: documentos de ejemplo ficticios y su lectura precargada.
+COTIZACIONES_EJEMPLO = [
+    {
+        "id": "quequen-agencia",
+        "titulo": "Cotización de agencia: Quequén",
+        "texto": """De: Operaciones, Agencia Marítima del Sur (ejemplo ficticio)
+Asunto: MV Agro Pioneer - alternativa de completamiento en Quequén
+
+Estimados:
+
+Ante la bajante del Paraná, les pasamos la alternativa de completar la carga en Quequén.
+
+Hay giro disponible para la semana próxima. Entre la navegación, la espera de muelle y la carga, estimamos 3 días adicionales de buque respecto de la salida directa desde Gran Rosario.
+
+Según la mesa de granos, la mercadería puesta en Quequén se consigue hoy con un premio de USD 33 por tonelada sobre Gran Rosario.
+
+Quedamos a disposición.
+Saludos,
+Operaciones""",
+        "lectura": {
+            "es_cotizacion": True,
+            "costo_diario_buque_usd": _NULO,
+            "bahia_blanca": _PUERTO_NULO,
+            "quequen": {
+                "dias_extra": {"valor": 3, "cita": "estimamos 3 días adicionales de buque"},
+                "premio_usd_tn": {
+                    "valor": 33,
+                    "cita": "un premio de USD 33 por tonelada sobre Gran Rosario",
+                },
+            },
+        },
+    },
+    {
+        "id": "recap-broker",
+        "titulo": "Recap del broker: costo diario y Bahía Blanca",
+        "texto": """De: Mesa de fletes, Broker Río de la Plata (ejemplo ficticio)
+Asunto: MV Agro Pioneer - recap de condiciones para top-off
+
+Confirmamos con el armador las condiciones para el completamiento:
+
+- Costo diario del buque: USD 42.500 por día, aplicable a todos los días adicionales.
+- Bahía Blanca: 2 días de navegación adicional, 1,5 días de espera de turno y 1,5 días de carga.
+- Premio del grano en Bahía Blanca: USD 36 por tonelada sobre Gran Rosario, según el cierre de ayer.
+
+Quequén no fue cotizado en esta ronda.""",
+        "lectura": {
+            "es_cotizacion": True,
+            "costo_diario_buque_usd": {"valor": 42_500, "cita": "Costo diario del buque: USD 42.500 por día"},
+            "bahia_blanca": {
+                "dias_extra": {
+                    "valor": 5,
+                    "cita": "2 días de navegación adicional, 1,5 días de espera de turno y 1,5 días de carga",
+                },
+                "premio_usd_tn": {"valor": 36, "cita": "USD 36 por tonelada sobre Gran Rosario"},
+            },
+            "quequen": _PUERTO_NULO,
+        },
+    },
+    {
+        "id": "no-cotizacion",
+        "titulo": "Documento que no es una cotización",
+        "texto": """De: Administración (ejemplo ficticio)
+Asunto: Recordatorio - vencimiento de facturas de octubre
+
+Les recordamos que el viernes vence el plazo para presentar las facturas de servicios de octubre. Las que lleguen después de esa fecha pasan al cierre de noviembre.
+
+Gracias.""",
+        "lectura": {
+            "es_cotizacion": False,
+            "costo_diario_buque_usd": _NULO,
+            "bahia_blanca": _PUERTO_NULO,
+            "quequen": _PUERTO_NULO,
+        },
+    },
+]
+
+LECTURA_VACIA = {
+    "es_cotizacion": False,
+    "costo_diario_buque_usd": _NULO,
+    "bahia_blanca": _PUERTO_NULO,
+    "quequen": _PUERTO_NULO,
+}
+
+
+def _normalizar(texto: str) -> str:
+    return " ".join(texto.split()).casefold()
+
+
+def _verificar_dato(dato: dict, campo: str, texto_norm: str, advertencias: list[str]) -> dict:
+    """Aplica el rango del campo y verifica que la cita esté literal en el documento (S6)."""
+    valor, cita = dato.get("valor"), dato.get("cita")
+    minimo, maximo, incluye_min = RANGOS[campo]
+    if valor is not None and not ((valor >= minimo if incluye_min else valor > minimo) and valor <= maximo):
+        advertencias.append(f"Valor fuera de rango descartado: {campo}.")
+        valor = cita = None
+    return {"valor": valor, "cita": cita, "cita_verificada": bool(cita) and _normalizar(cita) in texto_norm}
+
+
+def armar_lectura(origen: str, modelo: str | None, motivo: str | None, crudo: dict, texto: str) -> dict:
+    """Única salida de una lectura, del modelo o precargada: pasa siempre por los mismos controles."""
+    norm = _normalizar(texto)
+    advertencias = list(crudo.get("advertencias", []))
+    puertos = {
+        id_puerto: {
+            c: _verificar_dato(crudo[clave][c], c, norm, advertencias) for c in ("dias_extra", "premio_usd_tn")
+        }
+        for id_puerto, clave in (("bahia-blanca", "bahia_blanca"), ("quequen", "quequen"))
+    }
+    return {
+        "origen": origen,
+        "modelo": modelo if origen == "ia" else None,
+        "motivo": None if origen == "ia" else motivo,
+        "es_cotizacion": crudo["es_cotizacion"],
+        "costo_diario_buque_usd": _verificar_dato(
+            crudo["costo_diario_buque_usd"], "costo_diario_buque_usd", norm, advertencias
+        ),
+        "puertos": puertos,
+        "advertencias": advertencias,
+    }
+
+
+def _leer_sin_ia(texto: str, motivo: str) -> dict:
+    """Fallback determinístico (S5): lectura precargada si el texto es un ejemplo; si no, valores vacíos."""
+    norm = _normalizar(texto)
+    ejemplo = next((e for e in COTIZACIONES_EJEMPLO if _normalizar(e["texto"]) == norm), None)
+    if ejemplo:
+        return armar_lectura("precargado", None, motivo, ejemplo["lectura"], texto)
+    return armar_lectura("sin_ia", None, motivo, LECTURA_VACIA, texto)
+
+
+class CotizacionEntrada(BaseModel):
+    texto: str
+
+
+@app.get("/api/cotizaciones-ejemplo")
+def get_cotizaciones_ejemplo():
+    return [{k: e[k] for k in ("id", "titulo", "texto")} for e in COTIZACIONES_EJEMPLO]
+
+
+@app.post("/api/leer-cotizacion")
+def leer_cotizacion(entrada: CotizacionEntrada):
+    texto = entrada.texto
+    if not texto.strip():
+        raise HTTPException(status_code=422, detail="El documento está vacío.")
+    if len(texto) > COTIZACION_MAX_CHARS:
+        raise HTTPException(status_code=422, detail="El documento supera los 8.000 caracteres.")
+    return _leer_sin_ia(texto, "sin_sdk")
