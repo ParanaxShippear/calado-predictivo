@@ -16,7 +16,7 @@ Cuando el Paraná baja, el calado máximo seguro de los buques se reduce y no pu
 - Pérdida de capacidad y lucro cesante a 72 hs. Como un buque se carga una sola vez, el lucro cesante es el del peor día de la ventana, no la suma de los tres.
 - Comparación de puertos de top-off contra la opción de no desviar.
 - Orden de desvío: documento dirigido a la agencia marítima, siempre visible como borrador y actualizado con la opción elegida. Se emite desde el propio documento. Muestra la cuenta (lucro cesante evitado, menos días extra de buque, menos premio del grano, igual ahorro neto) y el anexo del pronóstico.
-- Lector de cotizaciones en el Simulador Top-off: se pega un documento (o se elige uno de ejemplo), se proponen los cinco valores de costo con la cita de la que sale cada uno, el usuario los confirma y la comparación se recalcula. En este estado las lecturas son las precargadas.
+- Lector de cotizaciones en el Simulador Top-off: se pega un documento (o se elige uno de ejemplo), se proponen los cinco valores de costo con la cita de la que sale cada uno, el usuario los confirma y la comparación se recalcula. La lectura la hace Claude; sin clave, sin red o si la llamada falla, se usa una lectura precargada o la carga manual, y la etiqueta lo indica.
 - Calendario de análisis: una fecha pasada muestra el escenario histórico y hoy muestra la proyección.
 - Anexo con el pronóstico de calado de los 3 días siguientes, dentro de la orden y descargable en CSV (incluye buque e IMO).
 
@@ -84,7 +84,7 @@ AGENTS.md            reglas de trabajo, alcance y supuestos del modelo
 docs/agents/         configuración del tracker local y las etiquetas de triage
 ```
 
-Stack: Python 3, FastAPI, Uvicorn, Requests y BeautifulSoup en el backend; React 19, Vite, Tailwind 4, Recharts y Lucide en el frontend.
+Stack: Python 3, FastAPI, Uvicorn, Requests, BeautifulSoup y el SDK `anthropic` en el backend; React 19, Vite, Tailwind 4, Recharts y Lucide en el frontend.
 
 ## API
 
@@ -124,6 +124,13 @@ uvicorn main:app --reload --port 8000
 ```
 
 La documentación interactiva de la API queda en `http://localhost:8000/docs`.
+
+Para que el lector de cotizaciones lea con Claude, definir `ANTHROPIC_API_KEY` en la terminal que corre uvicorn, antes de iniciarlo (nunca en un archivo):
+
+- PowerShell: `$env:ANTHROPIC_API_KEY = "..."`
+- bash: `export ANTHROPIC_API_KEY=...`
+
+Sin la clave, el lector responde con las lecturas precargadas de los documentos de ejemplo.
 
 Frontend:
 
