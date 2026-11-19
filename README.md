@@ -11,13 +11,13 @@ Cuando el Paraná baja, el calado máximo seguro de los buques se reduce y no pu
 ## Funcionalidad
 
 - Pantalla inicial que pide el IMO del buque; hasta entonces no se muestra ningún dato.
-- Altura del río en Rosario: 4 días de histórico y 3 de proyección.
+- Altura del río en Rosario: 4 días de lecturas reales del INA y la proyección de un modelo estadístico, con su rango. Si el INA todavía no publicó la lectura de hoy, la altura de hoy es una estimación y la interfaz lo indica.
 - Calado máximo seguro (en pies) y tonelaje recomendado para cada día.
 - Pérdida de capacidad y lucro cesante a 72 hs. Como un buque se carga una sola vez, el lucro cesante es el del peor día de la ventana, no la suma de los tres.
 - Comparación de puertos de top-off contra la opción de no desviar.
 - Orden de desvío: documento dirigido a la agencia marítima, siempre visible como borrador y actualizado con la opción elegida. Se emite desde el propio documento. Muestra la cuenta (lucro cesante evitado, menos días extra de buque, menos premio del grano, igual ahorro neto) y el anexo del pronóstico.
 - Lector de cotizaciones en el Simulador Top-off: se pega un documento (o se elige uno de ejemplo), se proponen los cinco valores de costo con la cita de la que sale cada uno, el usuario los confirma y la comparación se recalcula. La lectura la hace Claude; sin clave, sin red o si la llamada falla, se usa una lectura precargada o la carga manual, y la etiqueta lo indica.
-- Calendario de análisis: una fecha pasada muestra el escenario histórico y hoy muestra la proyección.
+- Calendario de análisis, de 2019 a hoy: una fecha pasada muestra las lecturas reales, la proyección hecha solo con datos hasta ese día y lo que ocurrió después. Un botón lleva a la bajante de julio de 2021.
 - Anexo con el pronóstico de calado de los 3 días siguientes, dentro de la orden y descargable en CSV (incluye buque e IMO).
 
 ## Top-off

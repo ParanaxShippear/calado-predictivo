@@ -70,6 +70,7 @@ const COLOR_GRAFICO = {
   grilla: '#e2e8f0',
   eje: '#334155',
   referencia: '#94a3b8',
+  observado: '#64748b',
   etiqueta: '#475569',
 }
 
@@ -92,6 +93,7 @@ function KpiCard({ icon: Icon, label, value, sub, tone = 'text-blue-600' }) {
 function Fuente({ nombre, estado }) {
   const [punto, texto] = {
     en_vivo: ['bg-emerald-600', 'en vivo'],
+    archivo: ['bg-sky-600', 'datos reales (archivo)'],
     simulado: ['bg-amber-500', 'valor por defecto'],
     demo: ['bg-amber-500', 'simulado'],
   }[estado]
@@ -124,6 +126,12 @@ function ChartTooltip({ active, payload, label }) {
       <div className="mb-1 font-semibold">{fmtFecha(label)}</div>
       <div>Altura: {fmtM(p.altura_rio_m)}</div>
       <div>Calado seguro: {fmtFt(p.calado_maximo_seguro_pies)}</div>
+      {p.altura_min_m != null && (
+        <div>
+          Rango: {fmtM(p.altura_min_m)} a {fmtM(p.altura_max_m)}
+        </div>
+      )}
+      {p.altura_observada_m != null && <div>Ocurrió: {fmtM(p.altura_observada_m)}</div>}
       <div className="text-slate-600">{p.tipo === 'prediccion' ? 'Proyección' : 'Histórico'}</div>
     </div>
   )
@@ -738,12 +746,14 @@ export default function App() {
   const chartData = useMemo(() => {
     if (!data) return []
     const hayProyeccion = data.serie.some((p) => p.tipo === 'prediccion')
+    const hayObservada = data.serie.some((p) => p.altura_observada_m != null)
     const ultimoHistorico = data.serie.filter((p) => p.tipo === 'historico').at(-1)?.fecha
     return data.serie.map((p) => ({
       ...p,
       historico: p.tipo === 'historico' ? p.altura_rio_m : null,
       proyeccion:
         hayProyeccion && (p.tipo === 'prediccion' || p.fecha === ultimoHistorico) ? p.altura_rio_m : null,
+      observado: hayObservada ? (p.altura_observada_m ?? (p.fecha === ultimoHistorico ? p.altura_rio_m : null)) : null,
     }))
   }, [data])
 
@@ -823,7 +833,16 @@ export default function App() {
   const { resumen } = data
   const baja = resumen.tendencia_72hs_m < 0
   const TrendIcon = baja ? ArrowDownRight : ArrowUpRight
-  const alturas = data.serie.map((p) => p.altura_rio_m)
+  const alturas = data.serie
+    .flatMap((p) => [p.altura_rio_m, p.altura_min_m, p.altura_max_m, p.altura_observada_m])
+    .filter((v) => v != null)
+  const hayRango = data.serie.some((p) => p.altura_min_m != null)
+  const hayObservada = data.serie.some((p) => p.altura_observada_m != null)
+  const modelo = data.proyeccion.origen === 'modelo'
+  // Hoy sin lectura del INA: el punto de hoy es una proyección desde la última lectura (el ancla).
+  const puntoAnalisis = data.serie.find((p) => p.fecha === fechaAnalisis)
+  const lecturaAncla = data.serie.find((p) => p.fecha === data.proyeccion.ancla)
+  const alturaEstimada = modelo && puntoAnalisis.tipo === 'prediccion'
   const yMin = Math.floor((Math.min(...alturas) - 0.2) * 10) / 10
   const yMax = Math.ceil((Math.max(...alturas) + 0.2) * 10) / 10
 
@@ -858,18 +877,34 @@ export default function App() {
 
         {/* Barra de controles */}
         <section className={`${CARD} flex flex-wrap items-end gap-x-6 gap-y-4 p-4`}>
-          <label className="flex flex-col gap-1">
-            <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-600">
-              <CalendarDays className="h-4 w-4 text-blue-600" /> Fecha de análisis
-            </span>
-            <input
-              type="date"
-              value={fecha}
-              max={hoyISO()}
-              onChange={(e) => cambiarFecha(e.target.value)}
-              className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
-            />
-          </label>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="flex flex-col gap-1">
+              <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-600">
+                <CalendarDays className="h-4 w-4 text-blue-600" /> Fecha de análisis
+              </span>
+              <input
+                type="date"
+                value={fecha}
+                min="2019-01-09"
+                max={hoyISO()}
+                onChange={(e) => cambiarFecha(e.target.value)}
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20"
+              />
+            </label>
+            {[
+              ['Bajante de julio de 2021', '2021-07-21'],
+              ['Hoy', hoyISO()],
+            ].map(([texto, iso]) => (
+              <button
+                key={texto}
+                type="button"
+                onClick={() => cambiarFecha(iso)}
+                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+              >
+                {texto}
+              </button>
+            ))}
+          </div>
 
           <form onSubmit={vincularAis} className="flex flex-col gap-1">
             <span className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-slate-600">
@@ -925,9 +960,21 @@ export default function App() {
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <KpiCard
             icon={Waves}
-            label={data.es_hoy ? 'Altura Actual' : `Altura al ${fmtFechaTexto(fechaAnalisis)}`}
+            label={
+              alturaEstimada
+                ? data.es_hoy
+                  ? 'Altura estimada hoy'
+                  : `Altura estimada al ${fmtFechaTexto(fechaAnalisis)}`
+                : data.es_hoy
+                  ? 'Altura Actual'
+                  : `Altura al ${fmtFechaTexto(fechaAnalisis)}`
+            }
             value={fmtM(data.altura_actual_m)}
-            sub="Hidrómetro Rosario"
+            sub={
+              alturaEstimada
+                ? `Última lectura del INA: ${fmtM(lecturaAncla.altura_rio_m)} (${fmtFechaTexto(data.proyeccion.ancla)})`
+                : 'Hidrómetro Rosario'
+            }
           />
           <KpiCard
             icon={TrendIcon}
@@ -973,8 +1020,12 @@ export default function App() {
             <section className={`${CARD} p-5`}>
               <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600">
                 <Anchor className="h-4 w-4 text-blue-600" /> Altura del río: histórico vs. proyección
-                <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold normal-case tracking-normal text-red-700">
-                  Escenario crítico
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold normal-case tracking-normal ${
+                    modelo ? 'bg-sky-50 text-sky-800' : 'bg-amber-50 text-amber-800'
+                  }`}
+                >
+                  {modelo ? 'Datos reales del INA · proyección estadística' : 'Escenario simulado'}
                 </span>
               </h2>
               <div className="h-64">
@@ -1026,9 +1077,49 @@ export default function App() {
                       dot={{ r: 4 }}
                       connectNulls={false}
                     />
+                    {hayRango && (
+                      <Line
+                        name="Rango de la proyección"
+                        dataKey="altura_min_m"
+                        stroke={COLOR_GRAFICO.proyeccion}
+                        strokeWidth={1}
+                        strokeDasharray="2 3"
+                        dot={false}
+                        connectNulls={false}
+                      />
+                    )}
+                    {hayRango && (
+                      <Line
+                        dataKey="altura_max_m"
+                        legendType="none"
+                        stroke={COLOR_GRAFICO.proyeccion}
+                        strokeWidth={1}
+                        strokeDasharray="2 3"
+                        dot={false}
+                        connectNulls={false}
+                      />
+                    )}
+                    {hayObservada && (
+                      <Line
+                        name="Lo que ocurrió"
+                        dataKey="observado"
+                        stroke={COLOR_GRAFICO.observado}
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                        connectNulls={false}
+                      />
+                    )}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              <p className="mt-3 text-sm text-slate-600">
+                {modelo
+                  ? 'Proyección de un modelo estadístico ajustado con lecturas del INA de 1990 a 2018 (Rosario, Diamante y La Paz). En 2019-2026 su error medio a 72 hs fue de 9,1 cm, contra 13,7 cm de suponer que el río no cambia. El rango contuvo cerca de 8 de cada 10 lecturas reales.'
+                  : 'No hay lecturas del INA para esta fecha: se muestra un escenario simulado.'}
+                {modelo &&
+                  data.es_pasado &&
+                  ` La proyección usa solo lecturas hasta el ${fmtFechaTexto(fechaAnalisis)}. La línea gris muestra lo que ocurrió después.`}
+              </p>
             </section>
           </div>
 
