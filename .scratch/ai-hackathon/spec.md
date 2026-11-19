@@ -271,13 +271,18 @@ Stored readings (also what Claude is expected to return; issue 03 checks it):
 | `recap-broker` | true | 42500 (`Costo diario del buque: USD 42.500 por día`) | 5 (`2 días de navegación adicional, 1,5 días de espera de turno y 1,5 días de carga`) / 36 (`USD 36 por tonelada sobre Gran Rosario`) | null / null |
 | `no-cotizacion` | false | null | null / null | null / null |
 
-On screen, with IMO `9436000` on today's date (13.300 tn to complete, lucro cesante USD 5.320.000, while the INA source stays on its default value):
+Amended 2026-11-16: the draft model and Quequén's DEMO days changed (.scratch/pronostico-ina/spec.md); these values replace the 13.300 tn ones.
 
-| Costs applied | Bahía Blanca: costo / ahorro neto | Quequén: costo / ahorro neto | Mejor opción |
-|---|---|---|---|
-| `DEMO` constants | USD 652.200 / +USD 4.667.800 | USD 665.400 / +USD 4.654.600 | Bahía Blanca |
-| `quequen-agencia` | USD 652.200 / +USD 4.667.800 | USD 558.900 / +USD 4.761.100 | Quequén |
-| `recap-broker` | USD 691.300 / +USD 4.628.700 | USD 675.400 / +USD 4.644.600 | Quequén |
+On screen, IMO `9436000`, with D3:
+
+| Scenario | Costs applied | Bahía Blanca: costo / ahorro neto | Quequén: costo / ahorro neto | Mejor opción |
+|---|---|---|---|---|
+| 2021-07-21 (9.800 tn, lucro cesante USD 3.920.000) | `DEMO` constants | USD 533.200 / +USD 3.386.800 | USD 572.400 / +USD 3.347.600 | Bahía Blanca |
+| | `quequen-agencia` | USD 533.200 / +USD 3.386.800 | USD 443.400 / +USD 3.476.600 | Quequén |
+| | `recap-broker` | USD 565.300 / +USD 3.354.700 | USD 584.900 / +USD 3.335.100 | Bahía Blanca |
+| Simulated (6.900 tn, lucro cesante USD 2.760.000) | `DEMO` constants | USD 434.600 / +USD 2.325.400 | USD 462.200 / +USD 2.297.800 | Bahía Blanca |
+| | `quequen-agencia` | USD 434.600 / +USD 2.325.400 | USD 347.700 / +USD 2.412.300 | Quequén |
+| | `recap-broker` | USD 460.900 / +USD 2.299.100 | USD 474.700 / +USD 2.285.300 | Bahía Blanca |
 
 ### D10. Frontend
 

@@ -32,9 +32,10 @@ app.add_middleware(
 
 METROS_A_PIES = 3.28084
 
-# Modelo de calado: profundidad del canal menos margen bajo quilla (UKC).
-OFFSET_CANAL_M = 6.0
-UKC_M = 0.6
+# Modelo de calado (.scratch/pronostico-ina/spec.md D2): 34 pies con el hidrómetro de Rosario en 2,47 m o más.
+CALADO_CANAL_PIES = 34.0
+ALTURA_REFERENCIA_M = 2.47
+PIES_POR_METRO_BAJO_REFERENCIA = 1.7
 
 # Modelo de negocio (referencia Panamax)
 CARGA_BASE_PANAMAX_TN = 45_000
@@ -43,7 +44,7 @@ PERDIDA_TN_POR_PIE = 2_200  # tn perdidas por pie de calado faltante en un Panam
 # --- Scraping -----------------------------------------------------------------
 # Los selectores CSS son placeholders: hay que ajustarlos al HTML real de cada
 # sitio. Mientras no coincidan, el scraping falla y se usa el valor de fallback.
-ALTURA_FALLBACK_M = 3.49
+ALTURA_FALLBACK_M = 1.00  # DEMO
 SOJA_FALLBACK_USD_TN = 400.0
 SCRAPE_TIMEOUT_S = 2
 CACHE_TTL_S = 300
@@ -161,7 +162,7 @@ def get_buque(imo: str):
 
 # --- Modelo de calado y tonelaje ------------------------------------------------
 def calado_maximo_pies(altura_m: float) -> float:
-    return round((altura_m + OFFSET_CANAL_M - UKC_M) * METROS_A_PIES, 2)
+    return round(CALADO_CANAL_PIES - PIES_POR_METRO_BAJO_REFERENCIA * max(0.0, ALTURA_REFERENCIA_M - altura_m), 2)
 
 
 def tonelaje_recomendado(calado_pies: float, buque: dict) -> int:

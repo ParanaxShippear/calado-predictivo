@@ -38,9 +38,9 @@ const COSTO_DIARIO_BUQUE_USD = 40_000 // DEMO
 const NUMERO_ORDEN_DEMO = 482 // DEMO
 const PUERTOS_TOP_OFF = [
   // Premio de Bahía Blanca: referencia (dentro del diferencial del maíz de Sio Granos sobre Gran Rosario,
-  // ~USD 32 a 40/tn en 2021-2022). Los 5 días extra y todos los valores de Quequén son DEMO.
+  // ~USD 32 a 40/tn en 2021-2022). Los días extra de ambos puertos y todos los valores de Quequén son DEMO.
   { id: 'bahia-blanca', nombre: 'Bahía Blanca', diasExtra: 5, premioUsdTn: 34, premioEsReferencia: true },
-  { id: 'quequen', nombre: 'Quequén', diasExtra: 4, premioUsdTn: 38, premioEsReferencia: false },
+  { id: 'quequen', nombre: 'Quequén', diasExtra: 5, premioUsdTn: 38, premioEsReferencia: false },
 ]
 
 const fmtTn = (n) => `${n.toLocaleString('es-AR')} tn`

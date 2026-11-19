@@ -54,8 +54,8 @@ Supuestos del modelo (no se muestran en la interfaz; se documentan acá y en `AG
 
 - 2.200 tn perdidas por pie de calado faltante en un Panamax. Cae dentro del rango que cita la BCR (2.000 a 2.500 tn por pie).
 - 45.000 tn de carga base. Es un supuesto no verificado: la BCR cita Panamax de 60.000 a 65.000 tn.
-- 34 pies de calado de diseño del Panamax, necesarios para la carga completa (`calado_diseno_pies`). Es un supuesto no verificado y no tiene relación con los 34 pies de Buenos Aires ni con los 34 pies de calado garantizado del canal que cita la BCR.
-- Calado máximo seguro = (altura del río + 6,0 m de profundidad de canal - 0,6 m de margen bajo quilla) convertido a pies.
+- 34 pies de calado de diseño del Panamax, necesarios para la carga completa (`calado_diseno_pies`). Es un supuesto no verificado y no tiene relación con los 34 pies de Buenos Aires.
+- Calado máximo seguro = 34 pies cuando el hidrómetro de Rosario marca 2,47 m o más, y 1,7 pies menos por cada metro por debajo. Los 2,47 m son el nivel que cita la BCR para la garantía de 34 pies; los 1,7 pies por metro son un supuesto ajustado con dos reportes de prensa de abril de 2020 (31 pies con cerca de 1 m, y 31'06" con 0,78 m).
 
 `AGENTS.md` es la fuente única de estos números: si uno cambia, se actualiza ahí primero.
 
@@ -69,8 +69,9 @@ Incluido en la demo:
 - Comparación de Bahía Blanca y Quequén, con una fila "no desviar".
 - Una etiqueta de "escenario crítico".
 - Un lector de cotizaciones con IA para los costos del top-off.
+- Alturas reales del INA y una proyección estadística del río (en construcción: ver .scratch/pronostico-ina/).
 
-Fuera de alcance: scraping real, modelos de pronóstico (la proyección del río sigue simulada), un asistente de chat, AIS en vivo, vista para la agencia marítima y tests.
+Fuera de alcance: scraping de páginas (el precio de la BCR sigue con su valor por defecto), un asistente de chat, AIS en vivo, vista para la agencia marítima y tests.
 
 El flujo principal es: ingresar el IMO, hoy, gráfico, lucro cesante, comparación de puertos, orden de desvío, descargar el anexo en CSV. La interfaz no muestra datos ni cifras hasta que se ingresa un IMO; la demo usa `9436000` (Panamax).
 
@@ -104,14 +105,14 @@ Stack: Python 3, FastAPI, Uvicorn, Requests, BeautifulSoup y el SDK `anthropic` 
 
 La base de buques es simulada: los nombres y datos son ficticios. En el campo "Buscador de buque (AIS)" de la interfaz, o en `GET /api/buque/{imo}`, se pueden usar:
 
-| IMO | Buque | Tipo | Carga óptima | Calado de diseño (supuesto) | Pérdida a 72 hs (escenario actual) |
+| IMO | Buque | Tipo | Carga óptima | Calado de diseño (supuesto) | Pérdida a 72 hs (escenario simulado) |
 |---|---|---|---|---|---|
-| `9436000` | Agro Pioneer | Panamax | 45.000 tn | 34 ft | 13.300 tn, lucro cesante de USD 5.320.000 |
-| `9321483` | Pampa Star | Handymax | 32.000 tn | 30 ft | 3.200 tn, lucro cesante de USD 1.280.000 |
-| `9512277` | Gran Chaco | Supramax | 55.000 tn | 36 ft | 21.600 tn, lucro cesante de USD 8.640.000 |
+| `9436000` | Agro Pioneer | Panamax | 45.000 tn | 34 ft | 6.900 tn, lucro cesante de USD 2.760.000 |
+| `9321483` | Pampa Star | Handymax | 32.000 tn | 30 ft | 0 tn |
+| `9512277` | Gran Chaco | Supramax | 55.000 tn | 36 ft | 13.800 tn, lucro cesante de USD 5.520.000 |
 
 - La interfaz arranca pidiendo el IMO y no muestra datos hasta recibirlo. La demo usa `9436000` (Agro Pioneer, Panamax). La API, si se la consulta sin `imo`, usa ese mismo Panamax.
-- Para ver el caso en que todos los puertos dan ahorro neto negativo y "No desviar" es la mejor opción, vincular `9321483` y elegir la fecha 2026-10-04.
+- Con el Handymax `9321483` el escenario simulado no tiene pérdida, y "No desviar" es la mejor opción.
 - Un IMO que no está en la tabla devuelve `404` con el mensaje "IMO ... no encontrado".
 
 ## Ejecución
