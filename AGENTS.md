@@ -3,7 +3,8 @@
 Agro-fintech command center. Projects the Paraná river height at Rosario, derives the safe draft of a Panamax vessel, and quantifies lost tonnage and lucro cesante in USD. Recommends a top-off port (Bahía Blanca or Quequén) and shows the resulting order of diversion as a document. A Claude-powered lector de cotizaciones reads a pasted quote and proposes the top-off costs; the user confirms them. Hackathon MVP: the pitch is the product.
 
 ## Layout
-- `api/main.py`: single-file FastAPI app (scraping, vessel DB, draft model, lector de cotizaciones, endpoints).
+- `api/main.py`: single-file FastAPI app (INA readings and river forecast, BCR scraping, vessel DB, draft model, lector de cotizaciones, endpoints).
+- `api/_ina_historico.py`: generated snapshot of INA daily heights since 2019. Regenerate it with the tool; edit nothing by hand.
 - `client/src/App.jsx`: single-file React UI (Vite + Tailwind 4 + Recharts + Lucide).
 - No test suite exists.
 
@@ -14,6 +15,8 @@ Agro-fintech command center. Projects the Paraná river height at Rosario, deriv
 - Verify API: run it, then `curl localhost:8000/api/pronostico-calado`.
 - `API_BASE` in `App.jsx` comes from `VITE_API_BASE`; without it, `http://localhost:8000/api` in dev and `/api` in production (Vercel).
 - Verify the lector: with the API running, `python .scratch/ai-hackathon/probar_lector.py`.
+- Verify the forecast: with the API running, `python .scratch/pronostico-ina/probar_pronostico.py`.
+- Refresh the INA snapshot: `python .scratch/pronostico-ina/ina.py historico`, then commit `api/_ina_historico.py`.
 - API contract and use cases: see README. Do not duplicate them here.
 
 ## Domain terms (use verbatim, never rename or translate)
@@ -24,9 +27,15 @@ Demo data is allowed. Unlabeled demo data is not.
 - While any source is simulated, the UI shows one visible "datos simulados" badge.
 - AIS is always simulated (hardcoded `BUQUES`): never show it as live.
 - The UI does not list the model assumptions or the top-off cost sources (owner decision, 2026-10-24: the client is not interested). The "datos simulados" badge covers the simulated figures, and this file stays the single source for them.
-- Demo values today (inline, keep them as named constants marked `DEMO`): previous days and projection (`altura_para`, `DELTAS_PROYECCION_M`), `BUQUES`, top-off port costs (extra vessel days + grain premium at the completion port), the order number, the sample cotizaciones and their stored readings.
-- Real sources attempted: river height (INA) and soy price (BCR) via scraping. Selectors are placeholders; on failure use the fallback and the `simulado` state (yellow indicator).
+- Demo values today (inline, keep them as named constants marked `DEMO`): the simulated river scenario shown only when no INA reading exists for the date (`ALTURA_FALLBACK_M`, `altura_para`, `DELTAS_PROYECCION_M`), `BUQUES`, top-off port costs (extra vessel days + grain premium at the completion port), the order number, the sample cotizaciones and their stored readings.
+- Real sources: daily river heights of Rosario, Diamante and La Paz from the INA public JSON API, served from the snapshot `api/_ina_historico.py`. The INA indicator shows `archivo` for real readings and `simulado` for the simulated scenario. The soy price (BCR) is still a placeholder scraper: on failure it uses the fallback and the `simulado` state.
 - Model assumptions: 2,200 tn per foot of draft, 45,000 tn base load (model assumption, not verified: BCR cites Panamax of 60,000-65,000 tn), 34 ft Panamax design draft needed for the full load (`calado_diseno_pies`; model assumption, not verified; unrelated to Buenos Aires' 34 ft). Safe draft = 34 ft (`CALADO_CANAL_PIES`) when the Rosario gauge reads 2.47 m or more (`ALTURA_REFERENCIA_M`, the level BCR cites for the 34 ft guarantee), minus 1.7 ft per metre below it (`PIES_POR_METRO_BAJO_REFERENCIA`, fitted to two press reports of April 2020; model assumption). Sources and fit: `.scratch/pronostico-ina/spec.md` D2. Changing one means updating it here (single source).
+
+## River forecast
+- It is a statistical model: a linear regression per horizon, fitted on INA readings of 1990-2018, with constants in `api/main.py`. Call it "modelo estadístico" in the UI and in the pitch; the AI of the product is the lector.
+- Its measured error and its limits are in `.scratch/pronostico-ina/spec.md` D5. Quote those numbers; claim nothing beyond them.
+- Every projection states its origin: `modelo` or `simulada`. A simulated scenario keeps its label.
+- `.scratch/pronostico-ina/ina.py proyectar` is the reference implementation: the API returns the same numbers.
 
 ## AI (lector de cotizaciones)
 - Claude reads the document and proposes five values; the user confirms them; cost and ahorro neto stay the fixed formula. Describe it that way in the UI and in the pitch.

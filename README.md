@@ -39,9 +39,10 @@ El costo del top-off tiene dos componentes: los días extra de buque (días por 
 
 | Dato | Origen | Estado |
 |---|---|---|
-| Altura del río (INA) | Scraping con selector provisorio | Usa el valor por defecto de 3,49 m. El indicador queda en amarillo (`simulado`). |
+| Altura del río (INA) | Media diaria de Rosario, Diamante y La Paz, de la API pública del INA. Se sirve desde un archivo incluido en el repositorio (`api/_ina_historico.py`, desde 2019). | Real. El indicador dice "datos reales (archivo)". |
+| Proyección del río | Modelo estadístico (regresión lineal) ajustado con lecturas del INA de 1990 a 2018. Proyecta hasta 5 días desde la última lectura. | Modelo determinístico, no IA. Error medio a 72 hs en 2019-2026: 9,1 cm, contra 13,7 cm de suponer que el río no cambia. |
+| Escenario simulado del río | Constantes en `api/main.py` | Demo. Solo se muestra cuando no hay lecturas del INA para la fecha, y la interfaz lo indica. |
 | Precio de la soja (BCR) | Scraping con selector provisorio | Usa el valor por defecto de USD 400/tn. El indicador queda en amarillo (`simulado`). |
-| Días previos y proyección | Simulados alrededor de la altura de hoy | Demo |
 | Buques (AIS) | Base fija de 3 buques en `api/main.py` | Demo. Nunca se muestra como en vivo. |
 | Costos del top-off | Constantes en el frontend | Demo. La excepción es el premio del grano en Bahía Blanca (USD 34/tn), que se rotula "referencia": está dentro del diferencial de precio del maíz que observó Sio Granos sobre Gran Rosario (unos USD 32 a 40/tn en 2021 y 2022). Los días extra y todos los valores de Quequén son demo. Una cotización confirmada por el usuario los reemplaza en pantalla. |
 | Lectura de cotizaciones | IA (Claude, API de Anthropic). Sin clave, sin red o si la llamada tarda más de 10 s, se usa una lectura precargada o la carga manual. | Real cuando la etiqueta dice "Leído por IA". La IA solo lee el documento y propone valores; el costo y el ahorro neto se calculan con una fórmula fija. |
@@ -81,6 +82,7 @@ Las reglas de trabajo y el detalle del alcance están en [AGENTS.md](AGENTS.md),
 
 ```
 api/main.py          API FastAPI en un solo archivo: scraping, buques, modelo de calado, endpoints
+api/_ina_historico.py  lecturas del INA desde 2019 (generado; no editar a mano)
 api/requirements.txt
 client/src/App.jsx   interfaz React en un solo archivo
 AGENTS.md            reglas de trabajo, alcance y supuestos del modelo
@@ -95,7 +97,7 @@ Stack: Python 3, FastAPI, Uvicorn, Requests, BeautifulSoup y el SDK `anthropic` 
 | Endpoint | Descripción |
 |---|---|
 | `GET /api/pronostico-calado` | Serie de 8 días (4 previos, fecha de análisis y 3 siguientes) con altura, calado seguro, tonelaje recomendado e impacto en USD. |
-| `GET /api/pronostico-calado?fecha=YYYY-MM-DD` | Igual, para otra fecha de análisis. Máximo 7 días a futuro. |
+| `GET /api/pronostico-calado?fecha=YYYY-MM-DD` | Igual, para otra fecha de análisis, entre 2019-01-09 y hoy. Cada punto proyectado trae su rango y, en fechas pasadas, la lectura que ocurrió. |
 | `GET /api/pronostico-calado?imo=9436000` | Recalcula con la capacidad del buque indicado. Se puede combinar con `fecha`. |
 | `GET /api/buque/{imo}` | Datos del buque (AIS simulado). |
 | `GET /api/cotizaciones-ejemplo` | Los tres documentos de ejemplo (ficticios) del lector de cotizaciones. |

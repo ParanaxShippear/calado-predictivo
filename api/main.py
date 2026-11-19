@@ -4,9 +4,10 @@ import math
 import os
 import random
 import re
+import sys
 import time
-from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
@@ -18,6 +19,20 @@ try:
     import anthropic
 except ImportError:  # el API sigue funcionando sin el SDK (S8)
     anthropic = None
+
+try:
+    # Desde el directorio de este archivo, nunca desde el directorio de trabajo (si no, falla en Vercel).
+    sys.path.insert(0, str(Path(__file__).parent))
+    import _ina_historico
+
+    _desde_ina = date.fromisoformat(_ina_historico.DESDE)
+    LECTURAS_INA = {
+        n: {_desde_ina + timedelta(days=i): v for i, v in enumerate(getattr(_ina_historico, n)) if v is not None}
+        for n in ("ROSARIO", "DIAMANTE", "LA_PAZ")
+    }
+except Exception:  # el API sigue funcionando sin el archivo: usa el escenario simulado
+    _ina_historico = None
+    LECTURAS_INA = None
 
 logger = logging.getLogger("paranax.lector")
 
@@ -49,8 +64,6 @@ SOJA_FALLBACK_USD_TN = 400.0
 SCRAPE_TIMEOUT_S = 2
 CACHE_TTL_S = 300
 
-INA_URL = "https://alerta.ina.gob.ar/pub/gui/Rosario"
-INA_SELECTOR = "#altura-actual"
 BCR_URL = "https://www.bcr.com.ar/es/mercados/mercado-de-granos/cotizaciones/cotizaciones-locales"
 BCR_SELECTOR = "#precio-soja-usd"
 
@@ -85,21 +98,6 @@ def _con_cache(clave: str, obtener) -> tuple[float, str]:
     valor, estado = obtener()
     _cache[clave] = {"ts": time.time(), "valor": valor, "estado": estado}
     return valor, estado
-
-
-def scrapear_altura_rio() -> tuple[float, str]:
-    """Altura del río en Rosario (m) desde INA/Prefectura. Fallback: 3.49 m."""
-
-    def obtener():
-        try:
-            altura = _leer_valor(INA_URL, INA_SELECTOR)
-            if not 0.5 <= altura <= 10:
-                raise ValueError("altura fuera de rango")
-            return altura, "en_vivo"
-        except Exception:
-            return ALTURA_FALLBACK_M, "simulado"
-
-    return _con_cache("ina", obtener)
 
 
 def scrapear_precio_soja() -> tuple[float, str]:
@@ -173,7 +171,39 @@ def tonelaje_recomendado(calado_pies: float, buque: dict) -> int:
     return int(max(0, round(toneladas, -2)))
 
 
-DELTAS_PROYECCION_M = {1: -0.06, 2: -0.23, 3: -0.37}  # vs. la altura de hoy
+DELTAS_PROYECCION_M = {1: -0.06, 2: -0.23, 3: -0.37}  # DEMO: vs. la altura de hoy
+
+# Modelo estadístico del río (.scratch/pronostico-ina/spec.md D5). Se reajusta con `python .scratch/pronostico-ina/ina.py ajustar`.
+UMBRAL_AGUAS_BAJAS_M = 1.64  # INA: nivel de aguas bajas de Rosario
+# Por horizonte (días desde la última lectura): intercepto y luego Rosario, Diamante y La Paz, con rezagos 1, 3 y 7.
+COEF_PRONOSTICO = {
+    1: (-0.0, 0.1252, -0.0824, -0.0305, -0.009, 0.1037, 0.1062, -0.0179, 0.0439, -0.0096),
+    2: (-0.0001, 0.0893, -0.147, -0.0428, -0.0063, 0.1724, 0.1994, -0.007, 0.1182, -0.0154),
+    3: (-0.0001, 0.051, -0.1811, -0.0435, 0.0006, 0.1912, 0.2736, 0.0521, 0.2008, -0.0181),
+    4: (-0.0002, 0.0419, -0.2179, -0.0315, 0.0011, 0.1892, 0.3299, 0.13, 0.2696, -0.0104),
+    5: (-0.0004, 0.0412, -0.2474, -0.0159, -0.0163, 0.199, 0.3708, 0.2294, 0.3199, 0.0007),
+}
+# P5 y P95 del error del ajuste (m), según la altura del día de la última lectura.
+RANGO_PRONOSTICO = {
+    "bajo": {1: (-0.09, 0.13), 2: (-0.11, 0.21), 3: (-0.13, 0.24), 4: (-0.19, 0.3), 5: (-0.15, 0.34)},
+    "alto": {1: (-0.06, 0.06), 2: (-0.08, 0.09), 3: (-0.1, 0.11), 4: (-0.12, 0.13), 5: (-0.14, 0.15)},
+}
+PRIMERA_FECHA_INA = date(2019, 1, 9)
+
+
+def _variables_pronostico(d: date) -> list[float] | None:
+    """Las 9 entradas del modelo para el día de anclaje d, o None si falta una lectura."""
+    f = []
+    for n in ("ROSARIO", "DIAMANTE", "LA_PAZ"):
+        s = LECTURAS_INA[n]
+        if d not in s:
+            return None
+        for lag in (1, 3, 7):
+            previo = d - timedelta(days=lag)
+            if previo not in s:
+                return None
+            f.append(s[d] - s[previo])
+    return f
 
 
 def altura_para(dia: date, hoy: date, altura_hoy: float) -> float:
@@ -198,22 +228,40 @@ def altura_para(dia: date, hoy: date, altura_hoy: float) -> float:
 def pronostico_calado(fecha: date | None = None, imo: str | None = None):
     hoy = date.today()
     ref = fecha or hoy
-    if ref > hoy + timedelta(days=7):
-        raise HTTPException(status_code=422, detail="La fecha no puede superar los 7 días a futuro")
+    if ref > hoy:
+        raise HTTPException(status_code=422, detail="La fecha no puede ser posterior a hoy.")
+    if ref < PRIMERA_FECHA_INA:
+        raise HTTPException(status_code=422, detail="No hay lecturas del INA anteriores al 2019-01-09.")
     buque = obtener_buque(imo) if imo else BUQUE_DEFAULT
+    precio_soja, estado_bcr = scrapear_precio_soja()
 
-    # En paralelo: si ambas fuentes caen, se paga un solo timeout.
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        f_altura = pool.submit(scrapear_altura_rio)
-        f_soja = pool.submit(scrapear_precio_soja)
-        altura_hoy, estado_ina = f_altura.result()
-        precio_soja, estado_bcr = f_soja.result()
+    # Ancla: el primer día de ref, ref-1 y ref-2 con las tres estaciones completas. Sin ancla: escenario simulado.
+    ancla = None
+    if LECTURAS_INA:
+        ancla = next((d for d in (ref - timedelta(days=i) for i in range(3)) if _variables_pronostico(d)), None)
+    if ancla:
+        ros = LECTURAS_INA["ROSARIO"]
+        entradas = [1.0] + _variables_pronostico(ancla)
+        regimen = "bajo" if ros[ancla] < UMBRAL_AGUAS_BAJAS_M else "alto"
 
-    # 4 días previos + fecha de análisis + 3 días siguientes. Lo posterior a hoy es proyección.
+    # 4 días previos + fecha de análisis + 3 días siguientes.
     serie = []
     for off in range(-4, 4):
         dia = ref + timedelta(days=off)
-        altura = altura_para(dia, hoy, altura_hoy)
+        minimo = maximo = observada = None
+        if ancla is None:
+            altura = altura_para(dia, hoy, ALTURA_FALLBACK_M)
+            tipo = "historico" if dia <= hoy else "prediccion"
+        elif dia <= ancla:
+            # shortcut: un día sin lectura repite la última anterior (huecos raros); sin recorte: el río baja de cero.
+            previo = next(d for d in (dia - timedelta(days=i) for i in range(30)) if d in ros)
+            altura, tipo = round(ros[previo], 2), "historico"
+        else:
+            k = (dia - ancla).days
+            base = ros[ancla] + sum(c * v for c, v in zip(COEF_PRONOSTICO[k], entradas))
+            p5, p95 = RANGO_PRONOSTICO[regimen][k]
+            altura, tipo = round(base, 2), "prediccion"
+            minimo, maximo, observada = round(base + p5, 2), round(base + p95, 2), ros.get(dia)
         calado = calado_maximo_pies(altura)
         tonelaje = tonelaje_recomendado(calado, buque)
         no_cargado = buque["carga_optima_tn"] - tonelaje
@@ -225,7 +273,10 @@ def pronostico_calado(fecha: date | None = None, imo: str | None = None):
                 "tonelaje_recomendado_tn": tonelaje,
                 "tonelaje_no_cargado_tn": no_cargado,
                 "impacto_usd": round(no_cargado * precio_soja),
-                "tipo": "historico" if dia <= hoy else "prediccion",
+                "tipo": tipo,
+                "altura_min_m": minimo,
+                "altura_max_m": maximo,
+                "altura_observada_m": observada,
             }
         )
 
@@ -240,7 +291,8 @@ def pronostico_calado(fecha: date | None = None, imo: str | None = None):
         "carga_base_tn": buque["carga_optima_tn"],
         "precio_soja_usd_tn": precio_soja,
         "buque": buque,
-        "fuentes": {"ina": estado_ina, "bcr": estado_bcr},
+        "fuentes": {"ina": "archivo" if ancla else "simulado", "bcr": estado_bcr},
+        "proyeccion": {"origen": "modelo" if ancla else "simulada", "ancla": ancla.isoformat() if ancla else None},
         "serie": serie,
         "resumen": {
             "tendencia_72hs_m": round(ventana[-1]["altura_rio_m"] - actual["altura_rio_m"], 2),
