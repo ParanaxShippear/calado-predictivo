@@ -52,7 +52,7 @@ After the event (human): remove the key from Vercel and revoke it in the Console
 
 - One sentence: "La IA lee la cotización y propone los costos, mostrando de qué frase sacó cada número. El usuario confirma y la cuenta es una fórmula fija."
 - The documents: "Son documentos de ejemplo."
-- The river: "La proyección del río es simulada." Describe it as simulated every time it comes up.
+- The river (amended 2026-11-16, see `.scratch/pronostico-ina/spec.md`): "Las alturas son lecturas reales del INA. La proyección es de un modelo estadístico, no de IA: en 2019-2026 erró en promedio 9 cm a 72 horas." When the chip says "Escenario simulado", say it is simulated.
 - "¿La IA decide a qué puerto ir?" -> "No. Lee el documento. La comparación es una cuenta que cualquiera puede revisar."
 - "¿Y si se equivoca?" -> "Cada número viene con su cita, verificamos que la cita esté en el documento, descartamos valores fuera de rango y el usuario confirma antes de aplicar."
 - "¿Qué modelo usan?" -> "Claude Sonnet 5.5, por la API de Anthropic. La etiqueta en pantalla muestra el modelo que respondió."

@@ -2,11 +2,11 @@
 
 Panel de decisiones para agroexportadoras del Gran Rosario. Proyecta la altura del Río Paraná en Rosario, calcula el calado máximo seguro de un buque Panamax y traduce la bajante en toneladas no cargadas y lucro cesante en dólares. Compara además en qué puerto conviene completar la carga (top-off).
 
-Es un prototipo de hackathon. Parte de los datos son simulados y la interfaz lo indica (ver "Datos reales y datos simulados").
+Es un prototipo de hackathon. Las alturas del río son lecturas reales del INA y su proyección es de un modelo estadístico; el AIS, los costos del top-off y el precio de la soja son simulados o valores por defecto, y la interfaz lo indica (ver "Datos reales y datos simulados").
 
 ## Problema
 
-Cuando el Paraná baja, el calado máximo seguro de los buques se reduce y no pueden cargarse a su capacidad óptima. Con el modelo actual, un Panamax pierde unas 2.200 tn por cada pie de calado faltante sobre una carga base de 45.000 tn. Cada tonelada que no se embarca es lucro cesante. Hoy esa decisión se toma reaccionando a la altura del día, sin una proyección del impacto económico.
+Cuando el Paraná baja, el calado máximo seguro de los buques se reduce y no pueden cargarse a su capacidad óptima. Con el modelo actual, un Panamax pierde unas 2.200 tn por cada pie de calado faltante sobre una carga base de 45.000 tn. Cada tonelada que no se embarca es lucro cesante. Hoy esa decisión se toma reaccionando a la altura del día, sin una proyección del río ni de su impacto económico.
 
 ## Funcionalidad
 
@@ -68,13 +68,13 @@ Incluido en la demo:
 - Un aviso visible de "datos simulados".
 - Un indicador AIS que no se muestra en verde.
 - Comparación de Bahía Blanca y Quequén, con una fila "no desviar".
-- Una etiqueta de "escenario crítico".
+- Una etiqueta que dice si el río en pantalla son datos reales o un escenario simulado.
 - Un lector de cotizaciones con IA para los costos del top-off.
-- Alturas reales del INA y una proyección estadística del río (en construcción: ver .scratch/pronostico-ina/).
+- Alturas reales del INA y una proyección estadística del río, con su error medido.
 
 Fuera de alcance: scraping de páginas (el precio de la BCR sigue con su valor por defecto), un asistente de chat, AIS en vivo, vista para la agencia marítima y tests.
 
-El flujo principal es: ingresar el IMO, hoy, gráfico, lucro cesante, comparación de puertos, orden de desvío, descargar el anexo en CSV. La interfaz no muestra datos ni cifras hasta que se ingresa un IMO; la demo usa `9436000` (Panamax).
+El flujo principal es: ingresar el IMO, hoy, la bajante de julio de 2021 (botón de fecha), gráfico, lucro cesante, comparación de puertos, orden de desvío, descargar el anexo en CSV. La interfaz no muestra datos ni cifras hasta que se ingresa un IMO; la demo usa `9436000` (Panamax).
 
 Las reglas de trabajo y el detalle del alcance están en [AGENTS.md](AGENTS.md), que es la fuente de verdad ante cualquier diferencia con este documento.
 
@@ -107,14 +107,14 @@ Stack: Python 3, FastAPI, Uvicorn, Requests, BeautifulSoup y el SDK `anthropic` 
 
 La base de buques es simulada: los nombres y datos son ficticios. En el campo "Buscador de buque (AIS)" de la interfaz, o en `GET /api/buque/{imo}`, se pueden usar:
 
-| IMO | Buque | Tipo | Carga óptima | Calado de diseño (supuesto) | Pérdida a 72 hs (escenario simulado) |
+| IMO | Buque | Tipo | Carga óptima | Calado de diseño (supuesto) | Pérdida a 72 hs (21/07/2021, datos reales) |
 |---|---|---|---|---|---|
-| `9436000` | Agro Pioneer | Panamax | 45.000 tn | 34 ft | 6.900 tn, lucro cesante de USD 2.760.000 |
-| `9321483` | Pampa Star | Handymax | 32.000 tn | 30 ft | 0 tn |
-| `9512277` | Gran Chaco | Supramax | 55.000 tn | 36 ft | 13.800 tn, lucro cesante de USD 5.520.000 |
+| `9436000` | Agro Pioneer | Panamax | 45.000 tn | 34 ft | 9.800 tn, lucro cesante de USD 3.920.000 |
+| `9321483` | Pampa Star | Handymax | 32.000 tn | 30 ft | 700 tn, lucro cesante de USD 280.000 |
+| `9512277` | Gran Chaco | Supramax | 55.000 tn | 36 ft | 17.400 tn, lucro cesante de USD 6.960.000 |
 
 - La interfaz arranca pidiendo el IMO y no muestra datos hasta recibirlo. La demo usa `9436000` (Agro Pioneer, Panamax). La API, si se la consulta sin `imo`, usa ese mismo Panamax.
-- Con el Handymax `9321483` el escenario simulado no tiene pérdida, y "No desviar" es la mejor opción.
+- Para ver el caso en que "No desviar" es la mejor opción, elegir la fecha 2026-11-10: el río está por encima de los 2,47 m y no hay pérdida.
 - Un IMO que no está en la tabla devuelve `404` con el mensaje "IMO ... no encontrado".
 
 ## Ejecución
@@ -138,6 +138,8 @@ Para que el lector de cotizaciones lea con Claude, definir `ANTHROPIC_API_KEY` e
 
 Sin la clave, el lector responde con las lecturas precargadas de los documentos de ejemplo.
 
+Las alturas del río salen de `api/_ina_historico.py`. Para actualizarlo: `python .scratch/pronostico-ina/ina.py historico`. La aplicación no consulta al INA mientras corre: si el archivo tiene más de dos días, la fecha de hoy muestra el escenario simulado, y la interfaz lo indica. Conviene actualizarlo la noche anterior a una demo.
+
 Frontend:
 
 ```bash
@@ -153,6 +155,7 @@ Verificación:
 ```bash
 cd client && npm run lint && npm run build
 curl localhost:8000/api/pronostico-calado
+python .scratch/pronostico-ina/probar_pronostico.py
 ```
 
 La primera consulta de cada 5 minutos puede demorar unos segundos mientras vencen los timeouts de las fuentes externas. Después responde desde caché.
@@ -160,5 +163,7 @@ La primera consulta de cada 5 minutos puede demorar unos segundos mientras vence
 ## Estado actual
 
 El alcance descripto arriba está implementado en el frontend. La especificación y los tickets están en `.scratch/top-off-demo/`, y el ensayo del flujo completo, con los resultados observados, en `.scratch/top-off-demo/issues/04-ensayo-del-demo.md`. La especificación, los tickets y el ensayo del lector de cotizaciones están en `.scratch/ai-hackathon/`.
+
+La especificación, los tickets y el ensayo de los datos del INA y la proyección están en `.scratch/pronostico-ina/`.
 
 Pendiente: confirmar a mano, en un navegador con ventana, que la descarga del CSV guarda el archivo. El contenido se verificó, pero la descarga a disco no se pudo observar en el ensayo automatizado.

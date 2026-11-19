@@ -26,14 +26,15 @@ Cerca del 75% de las exportaciones argentinas de granos, harinas y aceites sale 
 Las bajantes extremas del Paraná siempre fueron recurrentes y además se ha comprobado que en los últimos años el nivel del río se ha vuelto más variable e impredecible debido a fenómenos climáticos. A pesar de todo esto la decisión sigue siendo manual. Los datos públicos (INA, BCR) y los modelos de proyección ya son accesibles para automatizar esa decisión.
 
 **¿Qué función cumple la AI en tu proyecto y cómo agrega valor?**
-La IA (Claude, de Anthropic) lee las cotizaciones de top-off que hoy llegan por mail, de la agencia marítima o del broker, y propone los costos de cada puerto mostrando la frase de la que sacó cada número. El usuario los confirma y la comparación se recalcula. La cuenta es una fórmula fija: la IA no decide ni proyecta. En esta demo los documentos son de ejemplo y la proyección del río es simulada.
+La IA (Claude, de Anthropic) lee las cotizaciones de top-off que hoy llegan por mail, de la agencia marítima o del broker, y propone los costos de cada puerto mostrando la frase de la que sacó cada número. El usuario los confirma y la comparación se recalcula. La cuenta es una fórmula fija: la IA no decide ni proyecta. En esta demo los documentos son de ejemplo. La proyección del río no es IA: es un modelo estadístico ajustado con lecturas reales del INA.
 
 ## Decisions
 
 - **Product name: Paranax** (team name: ParanaLove). Set by the owner on 2026-10-24; the form answers above do not name the product.
 - **Date arbitrage is no longer in the product.** The owner removed the "Arbitraje Logístico" block on 2026-10-24. The form answer "recomienda fecha de zarpe y puerto de top-off" (AI question) no longer matches: the product recommends the top-off port and shows the order. Update the form or that sentence before submitting.
 - **Track: Finanzas.** The repo frames the product as an agro-fintech command center (lucro cesante in USD, top-off cost comparison).
-- **AI answer says exactly what the AI does.** Claude reads a pasted cotización and proposes five cost inputs with the sentence behind each; the user confirms them; cost and ahorro neto are a fixed formula. The river projection is still simulated and the sample documents are fictional. `AGENTS.md` requires the UI and the pitch to say what is AI-driven, what is a deterministic model and what is simulated data.
+- **AI answer says exactly what the AI does.** Claude reads a pasted cotización and proposes five cost inputs with the sentence behind each; the user confirms them; cost and ahorro neto are a fixed formula. The sample documents are fictional. The river heights are real INA readings and their projection is a statistical model (a linear regression), described as that and never as AI. `AGENTS.md` requires the UI and the pitch to say what is AI-driven, what is a deterministic model and what is simulated data.
+- **The forecast claim is the measured one.** On 2019-2026, which the fit never saw, the model's mean error at 72 h was 9.1 cm against 13.7 cm for assuming no change, and its range held about 8 of 10 readings. In a stable deep bajante the projection is nearly flat. The draft formula rests on the 2.47 m reference BCR cites and on two press reports of April 2020. Details and sources: `.scratch/pronostico-ina/spec.md` D2 and D5.
 - **That costs arrive as an email or a recap is the team's reading of the business**, not verified with an exporter. Say "documento de ejemplo" in the pitch.
 - **Market size uses only sourced figures.** The number of exporting companies was not found in any source, so it is not claimed. Figures are cited with their source below.
 - **"Por qué ahora" climate claim.** The sentence "el nivel del río se ha vuelto más variable e impredecible debido a fenómenos climáticos" is the team's wording and has no source in this repo. Add one before defending it in front of the jury.
@@ -67,7 +68,8 @@ Decisions:
 Guardrails for the recording:
 
 - Say "datos simulados" out loud during the demo. The badge is already in the UI.
-- Say what the AI does in one sentence: "la IA lee la cotización y propone los costos; la cuenta es fija". The river projection is simulated: describe it as simulated, never as an AI or machine-learning forecast.
+- Say what the AI does in one sentence: "la IA lee la cotización y propone los costos; la cuenta es fija". Say what the forecast is in another: "las alturas son lecturas reales del INA y la proyección es de un modelo estadístico que en 2019-2026 erró 9 cm en promedio a 72 horas".
+- Keep "datos simulados" for what is simulated: the AIS, the top-off costs and the soy price. When the chip says "Escenario simulado", say so.
 - If the label on screen says "Lectura precargada", say so out loud.
 - Record with the backend already running, to avoid the scraping timeout on camera.
 
