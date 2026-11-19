@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
-  LineChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -747,6 +748,7 @@ export default function App() {
     if (!data) return []
     const hayProyeccion = data.serie.some((p) => p.tipo === 'prediccion')
     const hayObservada = data.serie.some((p) => p.altura_observada_m != null)
+    const hayRango = data.serie.some((p) => p.altura_min_m != null)
     const ultimoHistorico = data.serie.filter((p) => p.tipo === 'historico').at(-1)?.fecha
     return data.serie.map((p) => ({
       ...p,
@@ -754,6 +756,9 @@ export default function App() {
       proyeccion:
         hayProyeccion && (p.tipo === 'prediccion' || p.fecha === ultimoHistorico) ? p.altura_rio_m : null,
       observado: hayObservada ? (p.altura_observada_m ?? (p.fecha === ultimoHistorico ? p.altura_rio_m : null)) : null,
+      // Banda del rango, unida a la última lectura (rango de ancho cero) para que salga de ahí.
+      rango:
+        p.altura_min_m != null ? [p.altura_min_m, p.altura_max_m] : hayRango && p.fecha === ultimoHistorico ? [p.altura_rio_m, p.altura_rio_m] : null,
     }))
   }, [data])
 
@@ -899,7 +904,7 @@ export default function App() {
                 key={texto}
                 type="button"
                 onClick={() => cambiarFecha(iso)}
-                className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                className="min-h-11 cursor-pointer rounded-lg border border-blue-600 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-600/30"
               >
                 {texto}
               </button>
@@ -1028,9 +1033,9 @@ export default function App() {
                   {modelo ? 'Datos reales del INA · proyección estadística' : 'Escenario simulado'}
                 </span>
               </h2>
-              <div className="h-64">
+              <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                  <ComposedChart data={chartData} margin={{ top: 24, right: 20, left: 0, bottom: 0 }}>
                     <CartesianGrid stroke={COLOR_GRAFICO.grilla} strokeDasharray="3 3" />
                     <XAxis
                       dataKey="fecha"
@@ -1060,6 +1065,17 @@ export default function App() {
                         position: 'top',
                       }}
                     />
+                    {hayRango && (
+                      <Area
+                        name="Rango de la proyección"
+                        dataKey="rango"
+                        stroke="none"
+                        fill={COLOR_GRAFICO.proyeccion}
+                        fillOpacity={0.14}
+                        activeDot={false}
+                        connectNulls={false}
+                      />
+                    )}
                     <Line
                       name="Histórico"
                       dataKey="historico"
@@ -1068,48 +1084,26 @@ export default function App() {
                       dot={{ r: 4 }}
                       connectNulls={false}
                     />
+                    {hayObservada && (
+                      <Line
+                        name="Lo que ocurrió"
+                        dataKey="observado"
+                        stroke={COLOR_GRAFICO.observado}
+                        strokeWidth={3}
+                        dot={{ r: 5, fill: COLOR_GRAFICO.observado }}
+                        connectNulls={false}
+                      />
+                    )}
                     <Line
                       name="Proyección"
                       dataKey="proyeccion"
                       stroke={COLOR_GRAFICO.proyeccion}
                       strokeWidth={3}
                       strokeDasharray="8 5"
-                      dot={{ r: 4 }}
+                      dot={{ r: 4, fill: '#fff' }}
                       connectNulls={false}
                     />
-                    {hayRango && (
-                      <Line
-                        name="Rango de la proyección"
-                        dataKey="altura_min_m"
-                        stroke={COLOR_GRAFICO.proyeccion}
-                        strokeWidth={1}
-                        strokeDasharray="2 3"
-                        dot={false}
-                        connectNulls={false}
-                      />
-                    )}
-                    {hayRango && (
-                      <Line
-                        dataKey="altura_max_m"
-                        legendType="none"
-                        stroke={COLOR_GRAFICO.proyeccion}
-                        strokeWidth={1}
-                        strokeDasharray="2 3"
-                        dot={false}
-                        connectNulls={false}
-                      />
-                    )}
-                    {hayObservada && (
-                      <Line
-                        name="Lo que ocurrió"
-                        dataKey="observado"
-                        stroke={COLOR_GRAFICO.observado}
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        connectNulls={false}
-                      />
-                    )}
-                  </LineChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
               <p className="mt-3 text-sm text-slate-600">
